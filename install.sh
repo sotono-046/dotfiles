@@ -10,24 +10,28 @@ fi
 # starshipのインストール
 if ! command -v starship &>/dev/null; then
   echo "Installing starship..."
-  curl -sS https://starship.rs/install.sh | sh -s -- -y
+  brew install starship
 fi
 
 # バックアップと既存ファイルの削除
 [ -e ~/.zshrc ] && mv ~/.zshrc ~/.zshrc.dotbackup
 [ -e ~/.config/starship.toml ] && mv ~/.config/starship.toml ~/.config/starship.toml.dotbackup
+[ -e ~/.tmux.conf ] && mv ~/.tmux.conf ~/.tmux.conf.dotbackup
 
 mkdir -p ~/.config
 
 rm -f ~/.zshrc
 rm -f ~/.config/starship.toml
+rm -f ~/.tmux.conf
+rm -f ~/.claude/CLAUDE.md
+rm -f ~/.gemini/GEMINI.md
 
 # 絶対パスでシンボリックリンクを張る
-ln -s /workspace/.zshrc ~/.zshrc
-ln -s /workspace/starship.toml ~/.config/starship.toml
-
-# starship 初期化を .zshrc に追加（なければ）
-grep -q 'starship init zsh' ~/.zshrc || echo 'eval "$(starship init zsh)"' >>~/.zshrc
+ln -s "$(pwd)/.zshrc" ~/.zshrc
+ln -s "$(pwd)/starship.toml" ~/.config/starship.toml
+ln -s "$(pwd)/.tmux.conf" ~/.tmux.conf
+ln -s "$(pwd)/CLAUDE.md" ~/.claude/CLAUDE.md
+ln -s "$(pwd)/GEMINI.md" ~/.gemini/GEMINI.md
 
 echo -e "\e[1;36mInstall completed!!!!\e[m"
 echo "Please restart your terminal or run: source ~/.zshrc"

@@ -1,7 +1,13 @@
 # zshの基本設定
 fpath=(~/.zfunc $fpath)
 autoload -Uz compinit
+compinit
 
-# 各種評価とPATH設定
-ZSH_THEME="cloud"
+# starship プロンプト
 eval "$(starship init zsh)"
+
+ZSH_THEME="cloud"
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+
+
+. "$HOME/.local/bin/env"
