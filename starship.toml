@@ -1,3 +1,6 @@
+# ===== Global (共通) =====
+format = "$all"
+
 [character]
 format = "[⚡️](bold green) "
 success_symbol = "[⚡️](bold green) "
@@ -22,7 +25,6 @@ utc_time_offset = "+9"
 
 [username]
 disabled = true
-
 
 [cmd_duration]
 min_time = 500

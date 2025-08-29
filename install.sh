@@ -19,8 +19,11 @@ fi
 [ -e ~/.tmux.conf ] && mv ~/.tmux.conf ~/.tmux.conf.dotbackup
 
 mkdir -p ~/.config
+mkdir -p ~/.config/starship
 
 rm -f ~/.zshrc
+rm -f ~/.sleep
+rm -f ~/.wakeup
 rm -f ~/.config/starship.toml
 rm -f ~/.tmux.conf
 rm -f ~/.claude/CLAUDE.md
@@ -32,6 +35,10 @@ ln -s "$(pwd)/starship.toml" ~/.config/starship.toml
 ln -s "$(pwd)/.tmux.conf" ~/.tmux.conf
 ln -s "$(pwd)/CLAUDE.md" ~/.claude/CLAUDE.md
 ln -s "$(pwd)/GEMINI.md" ~/.gemini/GEMINI.md
+
+ln -s "$(pwd)/.sleep" ~/.sleep
+ln -s "$(pwd)/.wakeup" ~/.wakeup
+
 
 echo -e "\e[1;36mInstall completed!!!!\e[m"
 echo "Please restart your terminal or run: source ~/.zshrc"
