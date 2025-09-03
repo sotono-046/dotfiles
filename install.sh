@@ -21,23 +21,26 @@ fi
 mkdir -p ~/.config
 mkdir -p ~/.config/starship
 
-rm -f ~/.zshrc
-rm -f ~/.sleep
-rm -f ~/.wakeup
-rm -f ~/.config/starship.toml
-rm -f ~/.tmux.conf
-rm -f ~/.claude/CLAUDE.md
-rm -f ~/.gemini/GEMINI.md
+# dotfilesの設定
+# "hoge:huga"みたいな感じで書く
+dotfiles=(
+  ".zshrc:~/.zshrc"
+  "starship.toml:~/.config/starship.toml"
+  ".tmux.conf:~/.tmux.conf"
+  "CLAUDE.md:~/.claude/CLAUDE.md"
+  "GEMINI.md:~/.gemini/GEMINI.md"
+  ".sleep:~/.sleep"
+  ".wakeup:~/.wakeup"
+  "AGENTS.md:~/.codex/AGENTS.md"
+)
 
-# 絶対パスでシンボリックリンクを張る
-ln -s "$(pwd)/.zshrc" ~/.zshrc
-ln -s "$(pwd)/starship.toml" ~/.config/starship.toml
-ln -s "$(pwd)/.tmux.conf" ~/.tmux.conf
-ln -s "$(pwd)/CLAUDE.md" ~/.claude/CLAUDE.md
-ln -s "$(pwd)/GEMINI.md" ~/.gemini/GEMINI.md
-
-ln -s "$(pwd)/.sleep" ~/.sleep
-ln -s "$(pwd)/.wakeup" ~/.wakeup
+# 既存ファイルの削除とシンボリックリンクの作成
+for dotfile in "${dotfiles[@]}"; do
+  src="${dotfile%%:*}"
+  dest="${dotfile##*:}"
+  rm -f "$dest"
+  ln -s "$(pwd)/$src" "$dest"
+done
 
 
 echo -e "\e[1;36mInstall completed!!!!\e[m"
