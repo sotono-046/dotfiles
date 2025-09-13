@@ -13,3 +13,5 @@
 
 brew services restart sleepwatcher
 pkill -x "BetterMouse" || true; pkill -x "BetterMouse Helper" || true; open -a "BetterMouse"
+killall Dock
+killall Finder 
