@@ -18,3 +18,4 @@ ZSH_THEME="cloud"
 . "$HOME/.local/bin/env"
 
 [[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
+export PATH="$HOME/.local/bin:$PATH"

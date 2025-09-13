@@ -20,18 +20,21 @@ fi
 
 mkdir -p ~/.config
 mkdir -p ~/.config/starship
+mkdir -p ~/.claude
+mkdir -p ~/.codex
+mkdir -p ~/.gemini
 
 # dotfilesの設定
 # "hoge:huga"みたいな感じで書く
 dotfiles=(
-  ".zshrc:~/.zshrc"
-  "starship.toml:~/.config/starship.toml"
-  ".tmux.conf:~/.tmux.conf"
-  "CLAUDE.md:~/.claude/CLAUDE.md"
-  "GEMINI.md:~/.gemini/GEMINI.md"
-  ".sleep:~/.sleep"
-  ".wakeup:~/.wakeup"
-  "AGENTS.md:~/.codex/AGENTS.md"
+  ".zshrc:$HOME/.zshrc"
+  "starship.toml:$HOME/.config/starship.toml"
+  ".tmux.conf:$HOME/.tmux.conf"
+  "AGENTS.md:$HOME/.claude/CLAUDE.md"
+  "AGENTS.md:$HOME/.codex/AGENTS.md"
+  "AGENTS.md:$HOME/.gemini/GEMINI.md"
+  ".sleep:$HOME/.sleep"
+  ".wakeup:$HOME/.wakeup"
 )
 
 # 既存ファイルの削除とシンボリックリンクの作成
@@ -43,5 +46,5 @@ for dotfile in "${dotfiles[@]}"; do
 done
 
 
-echo -e "\e[1;36mInstall completed!!!!\e[m"
-echo "Please restart your terminal or run: source ~/.zshrc"
+echo "✌️Install completed!!!!"
+echo "✌️ Please restart your terminal or run: source ~/.zshrc"
