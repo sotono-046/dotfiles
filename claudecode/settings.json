@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npm install)",
+      "mcp__serena__list_dir",
+      "mcp__serena__find_file",
+      "Bash(source .env.local)",
+      "Bash(node /tmp/test-firebase-connection.js:*)",
+      "Bash(firebase:*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(npm run:*)",
+      "Bash(echo:*)",
+      "mcp__codex__codex",
+      "Read(//Volumes/Mac1TB/_sync/_Sotono/_work/2506_bongin_悠々ホーム/persona_yuyu/**)",
+      "Read(//Volumes/Mac1TB/_sync/_Sotono/_work/2506_bongin_悠々ホーム/yuyu_phase2/**)",
+      "Bash(mv:*)",
+      "Bash(gcloud config get-value:*)",
+      "Bash(gcloud run services list:*)",
+      "Bash(say \"完了\")",
+      "Bash(gcloud builds submit:*)",
+      "Bash(gcloud run deploy:*)",
+      "Bash(gcloud run services update:*)",
+      "Bash(say \"レビュー完了\")",
+      "Bash(npx tsc:*)",
+      "Bash(say \"修正完了\")",
+      "Bash(say \"設定完了\")",
+      "Bash(gcloud functions list:*)",
+      "Bash(gcloud logging read:*)",
+      "Bash(mkdir:*)",
+      "mcp__serena__initial_instructions",
+      "mcp__serena__search_for_pattern",
+      "mcp__serena__activate_project",
+      "mcp__serena__get_symbols_overview",
+      "mcp__serena__find_symbol",
+      "Bash(gcloud storage buckets:*)",
+      "Bash(git commit:*)",
+      "Bash(node /tmp/test-finish-api.js:*)",
+      "Bash(npm show:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout 30 npm run dev:*)",
+      "Bash(npx update-browserslist-db@latest:*)",
+      "Bash(npx next lint:*)",
+      "Bash(npm test:*)",
+      "Bash(ls:*)",
+      "Bash(npx eslint:*)",
+      "Bash(ESLINT_USE_FLAT_CONFIG=false npx eslint:*)",
+      "Bash(xargs rm:*)",
+      "Bash(find:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "default"
+  },
+  "enabledMcpjsonServers": [
+    "playwright"
+  ],
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Pop.aiff"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Hero.aiff"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash /Users/sotono/.claude/statusline-command.sh"
+  },
+  "alwaysThinkingEnabled": false,
+  "feedbackSurveyState": {
+    "lastShownTime": 1754032617523
+  }
+}

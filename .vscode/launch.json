@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug install.sh",
+      "type": "bashdb",
+      "request": "launch",
+      "program": "${workspaceFolder}/install.sh",
+      "cwd": "${workspaceFolder}",
+      "args": [],
+      "pathBash": "/opt/homebrew/bin/bash"
+    }
+  ]
+}

@@ -33,9 +33,9 @@ dotfiles=(
   "AGENTS.md:$HOME/.claude/CLAUDE.md"
   "AGENTS.md:$HOME/.codex/AGENTS.md"
   "AGENTS.md:$HOME/.gemini/GEMINI.md"
-  "claudecode/.claude.json:$HOME/.claude.json" 
-  "claudecode/agents/:$HOME/.claude/agents"
-  "claudecode/comands/:$HOME/.claude/commands"
+  "claudecode/agents:$HOME/.claude/agents"
+  "claudecode/comands:$HOME/.claude/commands"
+  "claudecode/settings.json:$HOME/.claude/settings.json"
 
 )
 
@@ -43,7 +43,7 @@ dotfiles=(
 for dotfile in "${dotfiles[@]}"; do
   src="${dotfile%%:*}"
   dest="${dotfile##*:}"
-  rm -f "$dest"
+  rm -rf "$dest"
   ln -s "$(pwd)/$src" "$dest"
 done
 
