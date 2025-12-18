@@ -33,8 +33,10 @@ dotfiles=(
   "AGENTS.md:$HOME/.claude/CLAUDE.md"
   "AGENTS.md:$HOME/.codex/AGENTS.md"
   "AGENTS.md:$HOME/.gemini/GEMINI.md"
-  ".sleep:$HOME/.sleep"
-  ".wakeup:$HOME/.wakeup"
+  "claudecode/.claude.json:$HOME/.claude.json" 
+  "claudecode/agents/:$HOME/.claude/agents"
+  "claudecode/comands/:$HOME/.claude/commands"
+
 )
 
 # 既存ファイルの削除とシンボリックリンクの作成
@@ -46,5 +48,5 @@ for dotfile in "${dotfiles[@]}"; do
 done
 
 
-echo "✌️Install completed!!!!"
+echo "✌️ Install completed!!!!"
 echo "✌️ Please restart your terminal or run: source ~/.zshrc"

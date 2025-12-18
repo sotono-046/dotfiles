@@ -19,3 +19,17 @@ ZSH_THEME="cloud"
 
 [[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
 export PATH="$HOME/.local/bin:$PATH"
+# OpenJDK (Apple Silicon Mac)
+export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
+export CPPFLAGS="-I/opt/homebrew/opt/openjdk/include"
+export JAVA_HOME="/opt/homebrew/opt/openjdk"export PATH="$HOME/.local/bin:$PATH"
+
+# Added by Antigravity
+export PATH="/Users/sotono/.antigravity/antigravity/bin:$PATH"
+
+# bun completions
+[ -s "/Users/sotono/.bun/_bun" ] && source "/Users/sotono/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
