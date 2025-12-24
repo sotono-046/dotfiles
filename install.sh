@@ -34,7 +34,7 @@ dotfiles=(
   "AGENTS.md:$HOME/.codex/AGENTS.md"
   "AGENTS.md:$HOME/.gemini/GEMINI.md"
   "claudecode/agents:$HOME/.claude/agents"
-  "claudecode/comands:$HOME/.claude/commands"
+  "claudecode/commands:$HOME/.claude/commands"
   "claudecode/settings.json:$HOME/.claude/settings.json"
 
 )
