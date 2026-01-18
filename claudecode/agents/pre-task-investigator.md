@@ -93,14 +93,6 @@ color: orange
 - 簡潔だが具体的に（3-5単語程度）
 - `investigation-` プレフィックスを必ず付ける
 
-## プロジェクト固有の考慮事項
-
-このプロジェクト（yuyu-miraino）を調査する際は以下を考慮してください：
-
-- **モノレポ構造**: apps/、packages/、services/ の階層構造を理解する
-- **共有パッケージ**: @yuyu/api、@yuyu/auth、@yuyu/firebase、@yuyu/ui、@yuyu/service-libs の役割と依存関係
-- **マルチテナント**: tenant_id によるデータスコープを意識する
-- **認証・RBAC**: 7段階のロールシステム（owner > admin > system > manager > recruiter > hr > viewer）
 
 ## 品質基準
 
