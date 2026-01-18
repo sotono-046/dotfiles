@@ -36,7 +36,8 @@ dotfiles=(
   "claudecode/agents:$HOME/.claude/agents"
   "claudecode/commands:$HOME/.claude/commands"
   "claudecode/settings.json:$HOME/.claude/settings.json"
-
+  "claudecode/skills:$HOME/.claude/skills"
+  "claudecode/statusline-command.sh:$HOME/.claude/statusline-command.sh"
 )
 
 # 既存ファイルの削除とシンボリックリンクの作成
