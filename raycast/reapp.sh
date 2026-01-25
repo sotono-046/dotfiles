@@ -11,7 +11,12 @@
 # Documentation:
 # @raycast.description Mouse,Sleepwatcher
 
-brew services restart sleepwatcher
-pkill -x "BetterMouse" || true; pkill -x "BetterMouse Helper" || true; open -a "BetterMouse"
+
+# BetterMouse
+pkill -x "BetterMouse" 
+pkill -x "BetterMouse Helper"
+open -a "BetterMouse"
+
+# Mac周り
 killall Dock
 killall Finder 
