@@ -12,13 +12,23 @@
       "WebSearch",
       "Read(/Users/sotono/dotfiles/**)",
       "Write(/Users/sotono/dotfiles/**)",
-      "Edit(/Users/sotono/dotfiles/**)"
+      "Edit(/Users/sotono/dotfiles/**)",
+      "Read(/Users/sotono/.claude/skills/**)",
+      "Read(/Users/sotono/.codex/skills/**)",
+      "Read(/Users/sotono/.cursor/skills-cursor/**)",
+      "mcp__serena",
+      "mcp__playwright",
+      "mcp__codex"
     ],
     "deny": [],
     "ask": [
       "Bash(rm:*)",
       "Bash(rm -rf:*)",
       "Bash(sudo:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh repo delete:*)",
+      "Bash(gh release:*)",
       "Read(/Users/sotono/**)",
       "Write(/Users/sotono/**)",
       "Edit(/Users/sotono/**)"
