@@ -5,6 +5,9 @@
 - レビュー結果を`AGENTS.md`に書き込む
 
 ## CLAUDE.mdの初期化
+
+下記コマンドを使って、プロジェクトのCLAUDE.mdを初期化してください。
+
 ```bash
 : > CLAUDE.md
 echo $'@AGENTS.md' > CLAUDE.md
