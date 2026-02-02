@@ -1,3 +1,7 @@
 .DS_Store
 .claude/settings.local.json
 claudecode/.claude.json
+
+# Symlinks
+claudecode/skills/skill-creator
+claudecode/skills/frontend-design
