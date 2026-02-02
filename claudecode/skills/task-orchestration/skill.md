@@ -17,13 +17,14 @@ description: "Taskツールを使用したサブエージェントの効率的�
 
 ## 1. 利用可能なサブエージェント
 
-| サブエージェント       | 役割                         | 主な用途                           |
-| ---------------------- | ---------------------------- | ---------------------------------- |
-| pre-task-investigator  | 事前調査・コンテキスト収集   | 実装前の現状把握、依存関係の調査   |
-| task-splitter-executor | タスク分割・実装実行         | 複雑なタスクの分割と段階的実装     |
-| code-quality-reviewer  | コードレビュー・品質チェック | 実装後の品質検証                   |
-| Explore                | コードベース探索・検索       | ファイル検索、コード構造の理解     |
-| Plan                   | 実装計画の設計               | アーキテクチャ設計、実装戦略の立案 |
+| サブエージェント   | 役割                       | 主な用途                             |
+| ------------------ | -------------------------- | ------------------------------------ |
+| `task-researcher`  | 事前調査・コンテキスト収集 | 実装前の現状把握、依存関係の調査     |
+| `plan-digger`      | プランレビュー・SOW作成    | イシュー分析、反復レビュー、SOW出力  |
+| `task-executor`    | タスク分割・実装実行       | 複雑なタスクの分割と段階的実装       |
+| `quality-gainner`  | 品質チェック・自動修正     | TypeScript/リントエラーの検出・修正  |
+| `Explore`          | コードベース探索・検索     | ファイル検索、コード構造の理解       |
+| `Plan`             | 実装計画の設計             | アーキテクチャ設計、実装戦略の立案   |
 
 ---
 
@@ -31,47 +32,59 @@ description: "Taskツールを使用したサブエージェントの効率的�
 
 ### フェーズ1: 調査（Investigation）
 
-複数の `pre-task-investigator` を並列起動し、異なる観点から情報を収集する。
+複数の `task-researcher` を並列起動し、異なる観点から情報を収集する。
 
 ```
 # 並列調査の例
 Task ツールを複数回並列で呼び出し:
 
-1. subagent_type: pre-task-investigator
+1. subagent_type: task-researcher
    prompt: "認証システムの現状実装を調査してください"
 
-2. subagent_type: pre-task-investigator
+2. subagent_type: task-researcher
    prompt: "関連するAPIエンドポイントの構造を調査してください"
 
 3. subagent_type: Explore
    prompt: "設定ファイルとスキーマ定義を探索してください"
 ```
 
-### フェーズ2: 実装（Execution）
+### フェーズ2: 計画（Planning）
 
-独立したサブタスクを `task-splitter-executor` で同時実行する。
+`plan-digger` でプランを練り、SOWを作成する。
+
+```
+# プランニングの例
+Task ツールを呼び出し:
+
+subagent_type: plan-digger
+prompt: "このイシューに対する実装プランをレビューし、SOWを作成してください"
+```
+
+### フェーズ3: 実装（Execution）
+
+独立したサブタスクを `task-executor` で同時実行する。
 
 ```
 # 並列実装の例
 Task ツールを複数回並列で呼び出し:
 
-1. subagent_type: task-splitter-executor
+1. subagent_type: task-executor
    prompt: "ユーザー認証モジュールを実装してください"
 
-2. subagent_type: task-splitter-executor
+2. subagent_type: task-executor
    prompt: "データベーススキーマを作成してください"
 ```
 
-### フェーズ3: 検証（Verification）
+### フェーズ4: 検証（Verification）
 
-`code-quality-reviewer` で品質をチェックし、問題があれば修正する。
+`quality-gainner` で品質をチェックし、問題を自動修正する。
 
 ```
 # 品質検証の例
 Task ツールを呼び出し:
 
-subagent_type: code-quality-reviewer
-prompt: "実装したコードの品質をチェックしてください"
+subagent_type: quality-gainner
+prompt: "実装したコードの品質をチェックし、問題があれば修正してください"
 ```
 
 ---
@@ -85,7 +98,7 @@ prompt: "実装したコードの品質をチェックしてください"
 ```
 Task ツールを呼び出し:
 
-subagent_type: task-splitter-executor
+subagent_type: task-executor
 prompt: "全テストスイートを実行してください"
 run_in_background: true
 ```
@@ -118,13 +131,13 @@ run_in_background: true
 
 - **同一ファイルの同時編集禁止**: 複数エージェントが同じファイルを編集しない
 - **依存関係の考慮**: 依存するタスクは順次実行する
-- **フェーズの分離**: 調査→実装→検証の順序を守る
+- **フェーズの分離**: 調査→計画→実装→検証の順序を守る
 
 ### エージェント間の連携
 
 - 各エージェントの完了を確認してから次フェーズへ進む
 - 調査結果は実装エージェントに適切に引き継ぐ
-- 検証で発見された問題は該当する実装エージェントで修正
+- 検証で発見された問題は `quality-gainner` が自動修正
 
 ### リソース管理
 
@@ -136,56 +149,66 @@ run_in_background: true
 
 ## 5. 実行パターン例
 
-### パターンA: 機能追加
+### パターンA: イシュー対応（フルフロー）
 
 ```
 1. [並列調査]
-   - pre-task-investigator: 既存実装の調査
-   - pre-task-investigator: 関連するテストの調査
+   - task-researcher: 既存実装の調査
+   - task-researcher: 関連するテストの調査
    - Explore: ディレクトリ構造の確認
 
-2. [計画]
-   - Plan: 実装計画の策定
+2. [計画・レビュー]
+   - plan-digger: SOW作成と反復レビュー
 
 3. [並列実装]
-   - task-splitter-executor: コア機能の実装
-   - task-splitter-executor: テストの実装
+   - task-executor: コア機能の実装
+   - task-executor: テストの実装
 
-4. [検証]
-   - code-quality-reviewer: 品質チェック
+4. [検証・修正]
+   - quality-gainner: 品質チェックと自動修正
 ```
 
 ### パターンB: バグ修正
 
 ```
 1. [調査]
-   - pre-task-investigator: バグの原因調査
+   - task-researcher: バグの原因調査
    - Explore: 関連コードの探索
 
 2. [実装]
-   - task-splitter-executor: 修正の実装
+   - task-executor: 修正の実装
 
 3. [検証]
-   - code-quality-reviewer: 修正の検証
+   - quality-gainner: 修正の検証と品質チェック
 ```
 
 ### パターンC: リファクタリング
 
 ```
 1. [並列調査]
-   - pre-task-investigator: 対象コードの依存関係調査
-   - pre-task-investigator: 影響範囲の調査
+   - task-researcher: 対象コードの依存関係調査
+   - task-researcher: 影響範囲の調査
 
 2. [計画]
-   - Plan: リファクタリング計画
+   - plan-digger: リファクタリング計画のSOW作成
 
 3. [段階的実装]
-   - task-splitter-executor: 段階1の実装
+   - task-executor: 段階1の実装
    - [検証後]
-   - task-splitter-executor: 段階2の実装
+   - task-executor: 段階2の実装
 
 4. [最終検証]
-   - code-quality-reviewer: 全体の品質チェック
+   - quality-gainner: 全体の品質チェックと修正
+```
+
+### パターンD: クイック修正
+
+```
+1. [実装]
+   - task-executor: 修正の実装
+
+2. [検証]
+   - quality-gainner: 品質チェック
 ```
 
 ---

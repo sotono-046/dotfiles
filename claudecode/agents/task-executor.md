@@ -1,6 +1,6 @@
 ---
-name: task-splitter-executor
-description: Use this agent when you receive a complex task that needs to be broken down into smaller, manageable subtasks with commit checkpoints. This agent should be used proactively when:\n\n<example>\nContext: ユーザーが複数のステップを含む実装タスクを依頼した場合\nuser: "PersonaのAPIエンドポイントを作成して、バリデーション、Firestore保存、レスポンス整形を実装してください"\nassistant: "このタスクを分割して実行するため、task-splitter-executor エージェントを使用します"\n<Task tool call to task-splitter-executor>\n</example>\n\n<example>\nContext: リファクタリングや機能追加で複数ファイルの変更が必要な場合\nuser: "認証システムにMFA機能を追加してください"\nassistant: "複数のサブタスクに分割して、各完了時にコミットできるようtask-splitter-executorエージェントを起動します"\n<Task tool call to task-splitter-executor>\n</example>\n\n<example>\nContext: SOWのフェーズ実行時\nuser: "SOWのフェーズ2を実行してください"\nassistant: "フェーズ2のタスクを分割して順次実行するため、task-splitter-executorエージェントを使用します"\n<Task tool call to task-splitter-executor>\n</example>
+name: task-executor
+description: Use this agent when you receive a complex task that needs to be broken down into smaller, manageable subtasks with commit checkpoints. This agent should be used proactively when:\n\n<example>\nContext: ユーザーが複数のステップを含む実装タスクを依頼した場合\nuser: "PersonaのAPIエンドポイントを作成して、バリデーション、Firestore保存、レスポンス整形を実装してください"\nassistant: "このタスクを分割して実行するため、task-executor エージェントを使用します"\n<Task tool call to task-executor>\n</example>\n\n<example>\nContext: リファクタリングや機能追加で複数ファイルの変更が必要な場合\nuser: "認証システムにMFA機能を追加してください"\nassistant: "複数のサブタスクに分割して、各完了時にコミットできるようtask-executorエージェントを起動します"\n<Task tool call to task-executor>\n</example>\n\n<example>\nContext: SOWのフェーズ実行時\nuser: "SOWのフェーズ2を実行してください"\nassistant: "フェーズ2のタスクを分割して順次実行するため、task-executorエージェントを使用します"\n<Task tool call to task-executor>\n</example>
 tools: Glob, Grep, Read, Edit, Write, NotebookEdit, WebFetch, TodoWrite, WebSearch, ListMcpResourcesTool, ReadMcpResourceTool
 model: opus
 color: cyan
@@ -19,6 +19,9 @@ color: cyan
 
 ### 1. タスク分割フェーズ
 - タスクを受け取ったら、まず全体像を把握する
+- GitHubイシューが渡された場合は `gh issue view` でイシュー情報を取得
+- イシュー番号を記録（報告に明記するため）
+- ブランチ名を決定する（`[type]/[issue番号]-[短い説明]` 形式）
 - 以下の観点でサブタスクに分割する:
   - 機能的な独立性
   - ファイル/モジュールの境界
@@ -64,6 +67,11 @@ color: cyan
 全タスク完了時:
 ```
 ## タスク完了報告
+
+| 項目 | 値 |
+|------|-----|
+| Issue | #[イシュー番号] (GitHubイシューが渡された場合は必須) |
+| Branch | `[type]/[issue番号]-[短い説明]` |
 
 ### 概要
 - **元タスク**: [元のタスク説明]

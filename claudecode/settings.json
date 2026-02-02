@@ -1,11 +1,85 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "alwaysThinkingEnabled": false,
+  "enabledMcpjsonServers": [
+    "playwright"
+  ],
+  "enabledPlugins": {
+    "example-skills@anthropic-agent-skills": true
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "command": "afplay /System/Library/Sounds/Pop.aiff",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      },
+      {
+        "hooks": [
+          {
+            "command": "/Users/sotono/.caudex/hooks/session-hook.sh",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "command": "/Users/sotono/.caudex/hooks/session-hook.sh",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "/Users/sotono/.caudex/hooks/session-hook.sh",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "/Users/sotono/.caudex/hooks/session-hook.sh",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "afplay /System/Library/Sounds/Hero.aiff",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      },
+      {
+        "hooks": [
+          {
+            "command": "/Users/sotono/.caudex/hooks/session-hook.sh",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
+  "language": "Japanese",
   "permissions": {
     "allow": [
-      "Bash",
-      "Read",
-      "Edit",
-      "Write",
       "Glob",
       "Grep",
       "WebFetch",
@@ -13,6 +87,7 @@
       "Read(/Users/sotono/dotfiles/**)",
       "Write(/Users/sotono/dotfiles/**)",
       "Edit(/Users/sotono/dotfiles/**)",
+      "Bash(/Users/sotono/dotfiles/**)",
       "Read(/Users/sotono/.claude/skills/**)",
       "Read(/Users/sotono/.codex/skills/**)",
       "Read(/Users/sotono/.cursor/skills-cursor/**)",
@@ -20,7 +95,6 @@
       "mcp__playwright",
       "mcp__codex"
     ],
-    "deny": [],
     "ask": [
       "Bash(rm:*)",
       "Bash(rm -rf:*)",
@@ -33,44 +107,13 @@
       "Write(/Users/sotono/**)",
       "Edit(/Users/sotono/**)"
     ],
-    "defaultMode": "default"
+    "defaultMode": "default",
+    "deny": []
   },
-  "enabledMcpjsonServers": [
-    "playwright"
-  ],
-  "hooks": {
-    "Notification": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/Pop.aiff"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/Hero.aiff"
-          }
-        ]
-      }
-    ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "bunx -y ccstatusline@latest",
-    "padding": 0
-  },
-  "language": "Japanese",
-  "alwaysThinkingEnabled": false,
   "plansDirectory": "./.temp/plans",
-  "enabledPlugins": {
-    "example-skills@anthropic-agent-skills": true
+  "statusLine": {
+    "command": "bunx -y ccstatusline@latest",
+    "padding": 0,
+    "type": "command"
   }
 }
