@@ -1,0 +1,29 @@
+version: "1.0"
+
+defaults:
+  base_dir: ../worktrees
+
+hooks:
+  post_create:
+    - type: command
+      command: |
+        # Get the original repository path (parent of worktree)
+        ORIGINAL_REPO=$(git -C "$(git rev-parse --git-dir)" worktree list | grep -v "$PWD" | head -1 | awk '{print $1}')
+
+        # Create symlinks for files
+        ln -sf "${ORIGINAL_REPO}/.env" .env
+        ln -sf "${ORIGINAL_REPO}/.claude" .claude
+
+        # Create symlinks for directories
+        ln -sf "${ORIGINAL_REPO}/.cursor" .cursor
+        ln -sf "${ORIGINAL_REPO}/.vscode" .vscode
+        ln -sf "${ORIGINAL_REPO}/.serena" .serena
+        ln -sf "${ORIGINAL_REPO}/.temp" .temp
+
+        echo "Created symlinks from original repository"
+
+    - type: command
+      command: pnpm install
+
+    - type: command
+      command: echo "Created new worktree!"
