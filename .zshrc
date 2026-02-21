@@ -106,3 +106,8 @@ repoh() {
 if [[ ! -f "$REPOHIST_FILE" ]]; then
     touch "$REPOHIST_FILE"
 fi
+
+# OpenClaw Completion
+source "/Users/sotono-mini/.openclaw/completions/openclaw.zsh"
+
+TERM=xterm-256color
