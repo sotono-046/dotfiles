@@ -1,6 +1,6 @@
 ---
 name: dotenvx
-description: dotenvx 環境変数管理ツールのリファレンス。暗号化、複数環境対応、GitHub Actions での使用例を提供。
+description: dotenvx で .env を暗号化・複数環境管理・key ローテーション・GitHub Actions 連携するときに使用。run/encrypt/decrypt コマンド、DOTENV_PRIVATE_KEY 運用、rotate 手順のリファレンス。
 ---
 
 # dotenvx Skill
@@ -91,7 +91,7 @@ dotenvx run -f .env.development -f .env.local -- npm run dev
 
 ## Key ローテーション
 
-private key が漏洩疑いになったとき、または定期的な rotation 時の手順。`dotenvx rotate` 専用コマンドは 2026/04 時点で存在しないため、decrypt → 新 key で encrypt を明示的に行う。
+private key が漏洩疑いになったとき、または定期的な rotation 時の手順。`dotenvx rotate` 専用コマンドは執筆時点で存在しないため（最新は公式 docs を確認）、decrypt → 新 key で encrypt を明示的に行う。
 
 **順序が最重要**: CI secret を **先に** 新 key に更新してから、新暗号文を merge する。逆だと旧 key で新暗号文を復号しようとして prod が落ちる。
 
@@ -131,7 +131,7 @@ rm .env.production.bak
 
 ## GitHub Actions
 
-curl でインストール。完全な例は `assets/gh_action_example.yaml` を参照。
+curl でインストール。最小例は以下。
 
 ```yaml
 steps:

@@ -1,6 +1,6 @@
 ---
 name: playwright-test
-description: Playwright Test (E2E) のベストプラクティスとリファレンス。テストの書き方、固定 wait 回避、ネットワークトリガー、DnD、GitHub Actions での shard/retry 設定など。Playwright テストを書く・レビュー・CI 設定するときに使用。
+description: Playwright Test (E2E) のベストプラクティスとリファレンス。config テンプレ、ロケーター、web-first assertion、固定 wait 回避、ネットワークトリガー / API モック / HAR 記録再生、DnD、モーダル、認証 storageState 再利用、ファイル up/down、POM、GitHub Actions での shard / browser matrix / retry / flaky 検出。Playwright テストを書く・レビュー・CI 設定する全タスクで使用。
 ---
 
 # Playwright Test
@@ -292,9 +292,7 @@ jq '.suites[].specs[] | select(.tests[].results | length > 1 and .[-1].status ==
   test-results/results.json
 ```
 
-GitHub Actions で artifact 保存し、別ジョブで集計 → 過去 N 回分の傾向を track する運用が定番。`@playwright/test` 1.40+ なら `expect.configure({ flaky: true })` 等の組込み support も利用可。
-
-### 鉄則: 固定 wait を使わない
+GitHub Actions で artifact 保存し、別ジョブで集計 → 過去 N 回分の傾向を track する運用が定番。`--retries` 値とテストごとの `test.info().status` / `expectedStatus` で flaky 判定を行うのが標準。
 
 ## 鉄則: 固定 wait を使わない
 

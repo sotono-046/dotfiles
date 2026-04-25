@@ -37,11 +37,11 @@ From there it can operate in a few ways.
 - If matching guidance exists in `references/`, load only the relevant files and follow their instructions.
 - If no matching guidance exists, consider if you know any well known security best practices for the chosen language and or frameworks, but if asked to generate a report, let the user know that concrete guidance is not available (you can still generate the report or detect for sure critical vulnerabilities)
 
-# Overrides
+## Overrides
 
 While these references contain the security best practices for languages and frameworks, customers may have cases where they need to bypass or override these practices. Pay attention to specific rules and instructions in the project's documentation and prompt files which may require you to override certain best practices. When overriding a best practice, you MAY report it to the user, but do not fight with them. If a security best practice needs to be bypassed / ignored for some project specific reason, you can also suggest to add documentation about this to the project so it is clear why the best practice is not being followed and to follow that bypass in the future.
 
-# Report Format
+## Report Format
 
 When producing a report, you should write the report as a markdown file in `security_best_practices_report.md` or some other location if provided by the user. You can ask the user where they would like the report to be written to.
 
@@ -59,7 +59,7 @@ After you write the report file, summarize the findings to the user.
 
 Also tell the user where the final report was written to
 
-# Fixes
+## Fixes
 
 If you produced a report, let the user read the report and ask to begin performing fixes.
 
@@ -73,7 +73,7 @@ Always follow any normal change or commit flow the user has configured. If makin
 
 Always follow any normal testing flows the user has configured (if any) to confirm that your changes are not introducing regressions. Consider the second order impacts the changes may have and inform the user before making them if there are any.
 
-# General Security Advice
+## General Security Advice
 
 Below is a few bits of secure coding advice that applies to almost any language or framework.
 
