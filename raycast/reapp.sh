@@ -12,11 +12,10 @@
 # @raycast.description Mouse,Sleepwatcher
 
 
-# BetterMouse
-pkill -x "BetterMouse" 
-pkill -x "BetterMouse Helper"
-open -a "BetterMouse"
-
 # Mac周り
 killall Dock
-killall Finder 
+killall Finder
+
+# DisplayLink（未インストール・未起動時はエラーを握りつぶす）
+killall DisplayLinkUserAgent 2>/dev/null
+open -a "DisplayLink Manager" 2>/dev/null
