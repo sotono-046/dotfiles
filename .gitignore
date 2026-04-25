@@ -5,3 +5,5 @@ claudecode/.claude.json
 # Symlinks
 claudecode/skills/skill-creator
 claudecode/skills/frontend-design
+.serena/
+.temp/
