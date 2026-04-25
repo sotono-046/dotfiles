@@ -39,68 +39,121 @@ export PATH="$HONE/.antigravity/antigravity/bin:$PATH"
 # Gitリポジトリ履歴ファイル
 export REPOHIST_FILE="$HOME/.repo_history"
 export WORK_DIR="$HOME/Documents/_work"
-  
-# ネストされたGitリポジトリを再帰的に検索する関数（履歴対応版）
-cdrepo() {
+
+# リポジトリまたはワークツリーを選択する共通関数
+_select_repo_or_worktree() {
     local WORK_DIR="${1:-/Users/sotono/Documents/_work}"
-    local selected=$(find "$WORK_DIR" \
+
+    # 第1段階: メインリポジトリを選択
+    local selected_repo=$(find "$WORK_DIR" \
         -type d \( -name "node_modules" -o -name ".cache" -o -name "Library" -o -name ".Trash" -o -name "venv" -o -name ".venv" \) -prune -o \
         -name ".git" -type d -print 2>/dev/null |
         sed 's|/.git||' |
         sed "s|^$WORK_DIR/||" |
-        fzf --header 'Git repositories')
+        fzf --header 'Select Git repository')
 
-    if [[ -n "$selected" ]]; then
-        local full_path="$WORK_DIR/$selected"
-        cd "$full_path"
-        echo "$full_path" >> "$REPOHIST_FILE"
+    if [[ -z "$selected_repo" ]]; then
+        return 1
     fi
+
+    local repo_path="$WORK_DIR/$selected_repo"
+
+    # 第2段階: ワークツリーがあるかチェック
+    cd "$repo_path"
+    local worktrees=$(git worktree list 2>/dev/null)
+    local worktree_count=$(echo "$worktrees" | wc -l | tr -d ' ')
+
+    local final_path
+    if [[ $worktree_count -gt 1 ]]; then
+        # ワークツリーが複数ある場合、ブランチ名を表示して選択
+        local selected=$(echo "$worktrees" |
+            awk '{
+                path = $1
+                # ブランチ名を抽出（[branch] の形式）
+                for(i=2; i<=NF; i++) {
+                    if ($i ~ /^\[.*\]$/) {
+                        branch = $i
+                        gsub(/^\[|\]$/, "", branch)
+                        print branch "\t" path
+                    }
+                }
+            }' |
+            fzf --header 'Select branch' --with-nth=1 --delimiter=$'\t')
+
+        # 選択されたパスを取得
+        if [[ -n "$selected" ]]; then
+            final_path=$(echo "$selected" | cut -f2)
+        fi
+    else
+        # ワークツリーがない場合はそのままメインリポジトリを使用
+        final_path="$repo_path"
+    fi
+
+    if [[ -z "$final_path" ]]; then
+        return 1
+    fi
+
+    echo "$final_path"
+    return 0
 }
 
-# repo + claude を起動する関数
 repo() {
     local WORK_DIR="${1:-/Users/sotono/Documents/_work}"
-    local selected=$(find "$WORK_DIR" \
-        -type d \( -name "node_modules" -o -name ".cache" -o -name "Library" -o -name ".Trash" -o -name "venv" -o -name ".venv" \) -prune -o \
-        -name ".git" -type d -print 2>/dev/null |
-        sed 's|/.git||' |
-        sed "s|^$WORK_DIR/||" |
-        fzf --header 'Git repositories')
+    local selected_path=$(_select_repo_or_worktree "$WORK_DIR")
 
-    if [[ -n "$selected" ]]; then
-        local full_path="$WORK_DIR/$selected"
-        cd "$full_path"
-        echo "$full_path" >> "$REPOHIST_FILE"
+    if [[ -n "$selected_path" ]]; then
+        cd "$selected_path"
+        echo "$selected_path" >> "$REPOHIST_FILE"
+    fi
+}
+
+repo-claude() {
+    local WORK_DIR="${1:-/Users/sotono/Documents/_work}"
+    local selected_path=$(_select_repo_or_worktree "$WORK_DIR")
+
+    if [[ -n "$selected_path" ]]; then
+        cd "$selected_path"
+        echo "$selected_path" >> "$REPOHIST_FILE"
         claude
     fi
 }
 
-# Gitリポジトリ履歴を閲覧する関数
-cdrepoh() {
-    local selected=$(tac "$REPOHIST_FILE" 2>/dev/null |
-        awk '!seen[$0]++' |
-        sed "s|^$WORK_DIR/||" |
-        fzf --header 'Repository history')
+repo-codex() {
+    local WORK_DIR="${1:-/Users/sotono/Documents/_work}"
+    local selected_path=$(_select_repo_or_worktree "$WORK_DIR")
 
-    if [[ -n "$selected" ]]; then
-        local full_path="$WORK_DIR/$selected"
-        cd "$full_path"
+    if [[ -n "$selected_path" ]]; then
+        cd "$selected_path"
+        echo "$selected_path" >> "$REPOHIST_FILE"
+        codex
     fi
 }
 
-# repoh + claude を起動する関数
-repoh() {
-    local selected=$(tac "$REPOHIST_FILE" 2>/dev/null |
-        awk '!seen[$0]++' |
-        sed "s|^$WORK_DIR/||" |
-        fzf --header 'Repository history')
+# 現在のリポジトリのワークツリーをfzfで選択して移動
+wt() {
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        echo "このディレクトリはGitリポジトリではありません"
+        return 1
+    fi
 
+    local worktrees
+    worktrees=$(git worktree list)
+    local worktree_count
+    worktree_count=$(printf '%s\n' "$worktrees" | wc -l | tr -d ' ')
+
+    if (( worktree_count <= 1 )); then
+        echo "追加のワークツリーはありません"
+        return 1
+    fi
+
+    local selected
+    selected=$(printf '%s\n' "$worktrees" | awk '{print $1}' | fzf --prompt='worktree> ')
     if [[ -n "$selected" ]]; then
-        local full_path="$WORK_DIR/$selected"
-        cd "$full_path"
-        claude
+        cd "$selected"
     fi
 }
+
+
 
 # 初期化
 if [[ ! -f "$REPOHIST_FILE" ]]; then
