@@ -1,0 +1,54 @@
+{
+    "version": 3,
+    "lines": [
+        [
+            {
+                "id": "612eda31-8d52-458f-8936-b07a3a795d17",
+                "type": "git-branch",
+                "rawValue": true,
+                "color": "white"
+            },
+            {
+                "id": "4472cd5a-86bd-4433-a271-2f398cd25266",
+                "type": "git-worktree",
+                "color": "white"
+            },
+            {
+                "id": "6faaea1e-f683-498c-8c08-a0517cd11b29",
+                "type": "context-percentage-usable"
+            }
+        ],
+        [
+            {
+                "id": "35adce2d-50ab-4639-99e7-0ce8d6354983",
+                "type": "custom-command",
+                "commandPath": "bash -lc 'input=\"$(cat)\"; dir=\"$(echo \"$input\" | jq -r \".cwd // .workspace.current_dir // empty\")\"; [ -z \"$dir\" ] && exit 0; home=\"${HOME%/}\"; disp=\"${dir##*/}\"; [ -z \"$disp\" ] && disp=\"/\"; [ \"$dir\" = \"$home\" ] && disp=\"~\"; enc=\"$(DIR=\"$dir\" python3 -c \"import os,urllib.parse; print(urllib.parse.quote(os.environ.get(\\\"DIR\\\",\\\"\\\"), safe=\\\"/\\\"))\")\"; printf '\\''\\e]8;;file://%s\\a%s\\e]8;;\\a'\\'' \"$enc\" \"$disp\"'",
+                "color": "brightMagenta"
+            }
+        ]
+    ],
+    "flexMode": "full-minus-40",
+    "compactThreshold": 60,
+    "colorLevel": 2,
+    "defaultPadding": " ",
+    "inheritSeparatorColors": false,
+    "globalBold": false,
+    "powerline": {
+        "enabled": false,
+        "separators": [
+            ""
+        ],
+        "separatorInvertBackground": [
+            false
+        ],
+        "startCaps": [
+            ""
+        ],
+        "endCaps": [
+            ""
+        ],
+        "theme": "dracula",
+        "autoAlign": false
+    },
+    "defaultSeparator": "☆"
+}

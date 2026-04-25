@@ -1,0 +1,17 @@
+// 🖱️ マウス操作を有効に
+mouse_mode true
+
+// 📋 macOSのコピー
+copy_command "pbcopy"
+
+// 📐 デフォルトのレイアウトをコンパクトに
+default_layout "compact"
+
+// 🧹 ペインの枠線を消す（スッキリする）
+pane_frames false
+
+// 💾 セッションを自動保存
+session_serialization true
+
+// 📜 スクロールバッファ
+scroll_buffer_size 10000
