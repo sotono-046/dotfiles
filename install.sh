@@ -30,14 +30,18 @@ dotfiles=(
   ".zshrc:$HOME/.zshrc"
   "starship.toml:$HOME/.config/starship.toml"
   ".tmux.conf:$HOME/.tmux.conf"
+  "zellij.conf:$HOME/.config/zellij/config.kdl"
+  "ccstatusline.json:$HOME/.config/ccstatusline/settings.json"
   "AGENTS.md:$HOME/.claude/CLAUDE.md"
   "AGENTS.md:$HOME/.codex/AGENTS.md"
   "AGENTS.md:$HOME/.gemini/GEMINI.md"
-  "claudecode/agents:$HOME/.claude/agents"
-  "claudecode/commands:$HOME/.claude/commands"
-  "claudecode/settings.json:$HOME/.claude/settings.json"
-  "claudecode/skills:$HOME/.claude/skills"
-  "claudecode/statusline-command.sh:$HOME/.claude/statusline-command.sh"
+  "agent/agents:$HOME/.claude/agents"
+  "agent/commands:$HOME/.claude/commands"
+  "agent/commands:$HOME/.codex/prompts"
+  "agent/settings.json:$HOME/.claude/settings.json"
+  "agent/skills:$HOME/.claude/skills"
+  "agent/skills:$HOME/.codex/skills"
+  "agent/statusline-command.sh:$HOME/.claude/statusline-command.sh"
 )
 
 # 既存ファイルの削除とシンボリックリンクの作成
