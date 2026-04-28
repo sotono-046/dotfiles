@@ -1,62 +1,86 @@
-# 一括ワークツリー削除コマンド
+# 子ワークツリー一掃（親だけ残す）
 
 ## 概要
 
-`temp/sotono-1` から `temp/sotono-5` までの5個のワークツリーとブランチを `wtp` コマンドで一括削除する。
-下記における「メインブランチ」は、プロジェクトの`AGENTS.md`にて指定された保存先がある場合にそれに準じる。
+`git worktree add` で増やせるのは**子**のワークツリーである。掃除するのはその**子**だけで、**親**（通常は最初に `clone` したあと作業してきた側＝同一リポジトリ内の「本体」に相当するワークツリー）が1つ残っていればよい。
+
+実務上、`git worktree list` の**先頭1行**がその親に相当し、**2行目以降**が子（追加したワークツリー）とみなしてよい。
+
+- 親側でチェックアウトしているブランチ名は **`main` である必要はない**（`dev` 等でもよい）。
+- リモートの追跡ブランチ削除や PR 操作が必要なら、**任意で `gh`** を併用する（後述）。
 
 ## 手順
 
 ### 1. 現状の確認
 
 ```bash
-# 現在のワークツリー状態を確認
-wtp list
-
-# 現在のブランチを確認
-git branch -a | grep temp/sotono
+git worktree list
 ```
 
-### 2. メインブランチに移動
-
-削除前にメインブランチに移動しておく。
-
-`AGENTS.md`で`dev`が指定されている場合のパターン
+先頭1行が**親**（消さない）。2行目以降が**子**（ここで削除の対象）。
 
 ```bash
-git checkout dev
+# 人間可読。子があるか目視で判断
+git worktree list
 ```
 
-### 3. 5個のワークツリーを一括削除
+（任意）子に紐づくブランチ向けの PR の有無を見る例:
 
 ```bash
-# temp/sotono-1 から temp/sotono-5 まで5個のワークツリーを削除
-for i in 1 2 3 4 5; do
-  wtp remove "temp/sotono-$i"
+gh pr list
+```
+
+### 2. 親のディレクトリで作業する（推奨）
+
+コマンドは**同一リポジトリのどの worktree からでも**実行可能だが、混乱を減らすなら**親のパス**（`git worktree list` の1行目）に `cd` してから行う。
+
+未コミットの変更を大切にしている**子**があれば、先に移動・コミット・stash する（`--force` は捨てる前提）。
+
+### 3. 子を一括 `remove`
+
+`git worktree list --porcelain` の `worktree` 行のうち、**2つ目以降のパス**（子）に対して `git worktree remove` する例（パスに空白が入ってもこの取り方で1行1パス）:
+
+```bash
+git worktree list --porcelain | awk '/^worktree /{n++; if(n>1) print substr($0,10)}' |
+while IFS= read -r path; do
+  [ -n "$path" ] || continue
+  git worktree remove "$path" || git worktree remove --force "$path"
 done
 ```
 
-### 4. リモートブランチも削除する場合
+- 通常の `remove` で失敗したら（汚いツリー等）、**意図を確認した上で** 続けの行で `--force` している。必要なら `remove` だけのループにし、`--force` は手作業に任せるとより安全。
+
+### 4. 不要になったローカルブランチ（任意）
+
+**子**を外すと、当該ブランチの ref だけ手元に残ることがある。不要ならブランチ名を確認のうえ削除:
 
 ```bash
-# リモートブランチを削除
-for i in 1 2 3 4 5; do
-  git push origin --delete "temp/sotono-$i"
-done
+git branch
+# 例: 特定ブランチを削除
+# git branch -D feature/xxx
 ```
 
-### 5. 削除結果の確認
+一括にせず、削除した子に紐づいていたブランチだけを都度 `git branch -D` するのが安全。
+
+### 5. リモート追跡ブランチの削除（任意）
+
+他マシンや CI でまだ要らない追跡ブランチを消す場合（ブランチ名は環境に合わせる）:
 
 ```bash
-wtp list
-git branch -a | grep temp/sotono
+# 例: リモートの該当ブランチを削除
+# git push origin --delete ブランチ名
 ```
 
-## 成果物
+PR を閉じる・マージする必要があれば `gh pr close` / `gh pr merge` など、チームの運用に合わせる。
 
-- 削除された5個のワークツリー
-  - `temp/sotono-1`
-  - `temp/sotono-2`
-  - `temp/sotono-3`
-  - `temp/sotono-4`
-  - `temp/sotono-5`
+### 6. 結果の確認
+
+```bash
+git worktree list
+```
+
+1行（**親**だけ）になっていれば、子の掃除は完了。
+
+## 補足
+
+- ブランチ名が **`main` のワークツリーだけ残す**、といった条件はこのコマンドの対象外（意図は「親1つ＋子を全削除」）。必要なら `git worktree list` の表示でブランチ名を見て、対象を絞る別手順にする。

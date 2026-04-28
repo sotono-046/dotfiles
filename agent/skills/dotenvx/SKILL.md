@@ -1,6 +1,6 @@
 ---
 name: dotenvx
-description: dotenvx で .env を暗号化・複数環境管理・key ローテーション・GitHub Actions 連携するときに使用。run/encrypt/decrypt コマンド、DOTENV_PRIVATE_KEY 運用、rotate 手順のリファレンス。
+description: dotenvx で .env を暗号化・複数環境管理・key ローテーション・GitHub Actions 連携するときに使用。run/encrypt/decrypt コマンド、DOTENV_PRIVATE_KEY 運用、rotate 手順。Git worktree（子）で作業するときは必要に応じて .env.keys を取り寄せてデバッグする手順も参照。
 ---
 
 # dotenvx Skill
@@ -88,6 +88,50 @@ dotenvx run -f .env.production -- npm start
 # 開発 + ローカル上書き
 dotenvx run -f .env.development -f .env.local -- npm run dev
 ```
+
+## Worktree での作業（.env.keys の取り寄せとデバッグ）
+
+**Git worktree** で**子**の作業コピーだけを切ったとき、**親**側にはあるが子には無いファイルとして **`.env.keys`** が典型例になる（`.gitignore` されており clone / worktree add では入ってこない、など）。
+
+暗号化済み `.env` を **`dotenvx run`** で読ませたり、IDE から **復号できる環境変数つきでデバッグ**したいときは、**必要なタイミングだけ**秘密鍵を手元に用意する。
+
+### 方針
+
+- **常にコピーする必要はない**。API を叩かない作業なら `.env.keys` なしでよい。
+- デバッグや `dotenvx get` で復号が要るときだけ、**キー（`.env.keys` または `DOTENV_*_PRIVATE_KEY`）を取ってくる**。
+
+### `.env.keys` を持ってくる例
+
+1. **親のワークツリーからコピー**（同一マシンで親が既にセットアップ済みのとき）  
+   `git worktree list` の**先頭行**が親のパス。親のリポジトリルートにある `.env.keys` を、**子のリポジトリルート**にコピーする。
+
+   ```bash
+   # 例: 親パスを確認してから（パスは環境に合わせる）
+   git worktree list
+   cp /path/to/parent/repo/.env.keys /path/to/child/worktree/.env.keys
+   ```
+
+2. **1Password / 社内の秘密管理 / 別端末**など、チームの定めた経路で平文のキーや `.env.keys` を受け取る（worktree に限らない通常運用と同じ）。
+
+3. **シェルに直接渡す**（ファイルを置かない選択）  
+   親の環境で `export` 済みなら同じ値を子のターミナルにコピーする、あるいは `DOTENV_PRIVATE_KEY` / `DOTENV_PRIVATE_KEY_<環境>` だけを安全な手段で貼る。
+
+### デバッグまでの流れ
+
+```bash
+# .env.keys を置いたうえで（または DOTENV_PRIVATE_KEY を export したうえで）
+dotenvx run -- npm run dev
+# または
+dotenvx run -- node --inspect-brk dist/main.js
+```
+
+IDE（VS Code / Cursor 等）の「起動構成」では、**親と同じ環境変数**（`DOTENV_PRIVATE_KEY` など）を **`.env.keys` を読み込むラッパー経由**にするか、`envFile` で**平文を置かない**よう、ドキュメント化された方法に従う。多くの場合はターミナルで `dotenvx run --` してからデバッガをアタッチする、または `dotenvx` が提供する run 連携を使う。
+
+### 注意
+
+- **`.env.keys` はコミットしない**（`.gitignore` を維持）。子にコピーしたファイルも誤って add しない。
+- 共有マシンではパーミッション（`chmod 600` 等）を意識する。
+- 子を `git worktree remove` するとき、**子側にだけ置いた `.env.keys` はディレクトリごと消える**。必要なら親に残る原本に影響はないが、都度コピーが要る点は踏まえておく。
 
 ## Key ローテーション
 
