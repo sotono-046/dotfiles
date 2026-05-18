@@ -14,7 +14,6 @@ ZSH_THEME="cloud"
 # iTerm2 shell integration無効化（OSC出力を防ぐため）
 # test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 
-
 . "$HOME/.local/bin/env"
 
 [[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
@@ -23,7 +22,6 @@ export PATH="$HOME/.local/bin:$PATH"
 export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 export CPPFLAGS="-I/opt/homebrew/opt/openjdk/include"
 export JAVA_HOME="/opt/homebrew/opt/openjdk"export PATH="$HOME/.local/bin:$PATH"
-
 
 # bun completions
 [ -s "$HONE/.bun/_bun" ] && source "$HONE/.bun/_bun"
@@ -34,7 +32,6 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 
 # Added by Antigravity
 export PATH="$HONE/.antigravity/antigravity/bin:$PATH"
-
 
 # Gitリポジトリ履歴ファイル
 export REPOHIST_FILE="$HOME/.repo_history"
@@ -152,8 +149,6 @@ wt() {
         cd "$selected"
     fi
 }
-
-
 
 # 初期化
 if [[ ! -f "$REPOHIST_FILE" ]]; then
