@@ -1,0 +1,10 @@
+interface:
+  display_name: "Assigned PR Merge Watch"
+  short_description: "Assigned PRsを条件付きで監視してマージ"
+  default_prompt: "Use $assigned-pr-merge-watch to scan and report my assigned non-draft PRs. Do not update branches or merge unless I explicitly ask for マージまで/mergeまで/マージして."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "github"
+      description: "Read PR review threads and resolve only verified fixed threads."
