@@ -107,6 +107,7 @@ refactor(user): extract validation logic
 
 - **必ず日本語で記述する**（タイトル含む）
 - 長文のPRは `.temp/YYMMDD/PR/YYMMDD-PR-<タイトル>.md` にファイル作成してから `gh pr create` で使用
+- PR 作成後にレビュー指摘が入ったら `ci-merge-watch` を併用し、指摘修正、必要な commit / push、対応済み thread の Resolve まで行う
 
 ### PR作成コマンド例
 
