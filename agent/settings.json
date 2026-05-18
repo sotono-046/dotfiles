@@ -36,7 +36,6 @@
       "Write(//Users/sotono/Documents/**)",
       "Edit(//Users/sotono/Documents/**)",
       "Bash(coderabbit:*)",
-      "mcp__pencil",
       "Bash(gh issue create:*)",
       "Bash(tmux send-keys:*)",
       "Bash(gh issue list:*)",
@@ -130,7 +129,8 @@
       "Bash(/opt/homebrew/bin/bash:*)",
       "Bash(/usr/local/bin/bash:*)",
       "Bash(git push)",
-      "Skill(skill-creator)"
+      "Skill(skill-creator)",
+      "mcp__pencil"
     ],
     "deny": [],
     "ask": [
@@ -155,62 +155,6 @@
             "command": "afplay /System/Library/Sounds/Pop.aiff"
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/sotono/.caudex/hooks/session-hook.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "idle_prompt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "AGI_COCKPIT_HOOK=1; if [ -n \"$AGI_COCKPIT_STATUS_FILE\" ]; then SID=$(echo \"$CLAUDE_ENV_FILE\" | sed -n \"s|.*/session-env/\\([^/]*\\)/.*|\\1|p\"); mkdir -p \"$(dirname \"$AGI_COCKPIT_STATUS_FILE\")\"; TMP=\"${AGI_COCKPIT_STATUS_FILE}.tmp\"; if [ -f \"$AGI_COCKPIT_STATUS_FILE\" ]; then jq --arg sid \"$SID\" '.status = \"notification\" | .sessionId = $sid' \"$AGI_COCKPIT_STATUS_FILE\" > \"$TMP\"; else jq -n --arg sid \"$SID\" '.status = \"notification\" | .sessionId = $sid' > \"$TMP\"; fi; if [ -s \"$TMP\" ]; then mv \"$TMP\" \"$AGI_COCKPIT_STATUS_FILE\"; else rm -f \"$TMP\"; fi; fi"
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/sotono/.caudex/hooks/session-hook.sh"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/sotono/.caudex/hooks/session-hook.sh"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/sotono/.caudex/hooks/session-hook.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "AGI_COCKPIT_HOOK=1; if [ -n \"$AGI_COCKPIT_STATUS_FILE\" ]; then SID=$(echo \"$CLAUDE_ENV_FILE\" | sed -n \"s|.*/session-env/\\([^/]*\\)/.*|\\1|p\"); mkdir -p \"$(dirname \"$AGI_COCKPIT_STATUS_FILE\")\"; TMP=\"${AGI_COCKPIT_STATUS_FILE}.tmp\"; if [ -f \"$AGI_COCKPIT_STATUS_FILE\" ]; then jq --arg sid \"$SID\" '.sessionId = $sid' \"$AGI_COCKPIT_STATUS_FILE\" > \"$TMP\"; else jq -n --arg sid \"$SID\" '.sessionId = $sid' > \"$TMP\"; fi; if [ -s \"$TMP\" ]; then mv \"$TMP\" \"$AGI_COCKPIT_STATUS_FILE\"; else rm -f \"$TMP\"; fi; fi"
-          }
-        ]
       }
     ],
     "Stop": [
@@ -222,64 +166,6 @@
             "command": "afplay /System/Library/Sounds/Hero.aiff"
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/sotono/.caudex/hooks/session-hook.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "AGI_COCKPIT_HOOK=1; if [ -n \"$AGI_COCKPIT_STATUS_FILE\" ]; then mkdir -p \"$(dirname \"$AGI_COCKPIT_STATUS_FILE\")\"; TMP=\"${AGI_COCKPIT_STATUS_FILE}.tmp\"; if [ -f \"$AGI_COCKPIT_STATUS_FILE\" ]; then jq  '.status = \"waiting_confirmation\"' \"$AGI_COCKPIT_STATUS_FILE\" > \"$TMP\"; else jq -n  '.status = \"waiting_confirmation\"' > \"$TMP\"; fi; if [ -s \"$TMP\" ]; then mv \"$TMP\" \"$AGI_COCKPIT_STATUS_FILE\"; else rm -f \"$TMP\"; fi; fi"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/sotono/.caudex/hooks/session-hook.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "AGI_COCKPIT_HOOK=1; if [ -n \"$AGI_COCKPIT_STATUS_FILE\" ]; then mkdir -p \"$(dirname \"$AGI_COCKPIT_STATUS_FILE\")\"; TMP=\"${AGI_COCKPIT_STATUS_FILE}.tmp\"; if [ -f \"$AGI_COCKPIT_STATUS_FILE\" ]; then jq  '.status = \"running\"' \"$AGI_COCKPIT_STATUS_FILE\" > \"$TMP\"; else jq -n  '.status = \"running\"' > \"$TMP\"; fi; if [ -s \"$TMP\" ]; then mv \"$TMP\" \"$AGI_COCKPIT_STATUS_FILE\"; else rm -f \"$TMP\"; fi; fi"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "AskUserQuestion",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "AGI_COCKPIT_HOOK=1; if [ -n \"$AGI_COCKPIT_STATUS_FILE\" ]; then mkdir -p \"$(dirname \"$AGI_COCKPIT_STATUS_FILE\")\"; TMP=\"${AGI_COCKPIT_STATUS_FILE}.tmp\"; if [ -f \"$AGI_COCKPIT_STATUS_FILE\" ]; then jq  '.status = \"waiting_confirmation\"' \"$AGI_COCKPIT_STATUS_FILE\" > \"$TMP\"; else jq -n  '.status = \"waiting_confirmation\"' > \"$TMP\"; fi; if [ -s \"$TMP\" ]; then mv \"$TMP\" \"$AGI_COCKPIT_STATUS_FILE\"; else rm -f \"$TMP\"; fi; fi"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "AskUserQuestion",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "AGI_COCKPIT_HOOK=1; if [ -n \"$AGI_COCKPIT_STATUS_FILE\" ]; then mkdir -p \"$(dirname \"$AGI_COCKPIT_STATUS_FILE\")\"; TMP=\"${AGI_COCKPIT_STATUS_FILE}.tmp\"; if [ -f \"$AGI_COCKPIT_STATUS_FILE\" ]; then jq  '.status = \"running\"' \"$AGI_COCKPIT_STATUS_FILE\" > \"$TMP\"; else jq -n  '.status = \"running\"' > \"$TMP\"; fi; if [ -s \"$TMP\" ]; then mv \"$TMP\" \"$AGI_COCKPIT_STATUS_FILE\"; else rm -f \"$TMP\"; fi; fi"
-          }
-        ]
       }
     ]
   },
@@ -287,12 +173,6 @@
     "type": "command",
     "command": "bunx -y ccstatusline@latest",
     "padding": 0
-  },
-  "enabledPlugins": {
-    "example-skills@anthropic-agent-skills": true,
-    "swift-lsp@claude-plugins-official": true,
-    "rust-analyzer-lsp@claude-plugins-official": true,
-    "clangd-lsp@claude-plugins-official": true
   },
   "language": "Japanese",
   "alwaysThinkingEnabled": false,
