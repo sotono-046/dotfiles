@@ -1,6 +1,6 @@
 ---
 name: gws-cli
-description: Google Workspace CLI (`gws`) を使って Drive / Gmail / Calendar / Sheets / Docs / Chat / Admin など Google Workspace の API を操作するスキル。ユーザーが「gws」「Google Workspace CLI」「Drive/Gmail/Calendar/Sheets/Docs/Chat を CLI で操作したい」「Workspace API を叩きたい」などと依頼したときに使用する。認証セットアップ、Discovery ベースのコマンド構造、ヘルパーコマンド（+send / +agenda / +upload など）、ページネーション、Sheets のシェルエスケープ、構造化 JSON 出力、終了コードを扱う。
+description: Google Workspace CLI (`gws`) で Drive / Gmail / Calendar / Sheets / Docs / Chat / Admin の API を操作。「gws」「Workspace API を CLI で叩きたい」等の依頼で使用。認証、Discovery ベースのコマンド構造、ヘルパー (+send / +agenda / +upload)、ページネーション、Sheets のエスケープ、JSON 出力、終了コードを扱う。
 ---
 
 # gws (Google Workspace CLI)

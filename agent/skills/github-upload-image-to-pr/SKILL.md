@@ -1,14 +1,6 @@
 ---
 name: github-upload-image-to-pr
-description: >-
-  Upload local images to a GitHub PR and embed them in the description or comments.
-  Use when asked to "attach screenshots to PR", "add images to PR", "upload test results to PR",
-  "embed screenshots in PR description", "add before/after images to PR", "attach UI screenshots",
-  "show test results in PR", "add visual evidence to PR", or any request involving images and PRs.
-  Always use this skill when the user wants to visually document changes in a pull request,
-  even if they don't use the word "upload" — phrases like "put the screenshot in the PR" or
-  "show the image in the PR" should trigger this skill.
-  Supports Playwright MCP / Chrome DevTools MCP / agent-browser as browser automation backends.
+description: ローカル画像を GitHub PR にアップロードし、説明文やコメントに埋め込む。「スクショを PR に貼る」「PR に画像を添付」「PR にテスト結果を載せる」など PR と画像が絡む依頼で使用。Playwright MCP / Chrome DevTools MCP / agent-browser をバックエンドとしてサポート。
 allowed-tools: Bash(agent-browser:*), Bash(gh:*), Bash(npx:*), Bash(cp:*), ToolSearch, Read, Glob, Write
 ---
 

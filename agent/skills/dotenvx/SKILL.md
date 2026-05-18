@@ -97,18 +97,32 @@ dotenvx run -f .env.development -f .env.local -- npm run dev
 
 ### 方針
 
-- **常にコピーする必要はない**。API を叩かない作業なら `.env.keys` なしでよい。
+- **常にコピーする必要はない**。API を叩かない作業、軽いコード修正、型確認、lint など復号不要な作業なら `.env.keys` なしで進める。
 - デバッグや `dotenvx get` で復号が要るときだけ、**キー（`.env.keys` または `DOTENV_*_PRIVATE_KEY`）を取ってくる**。
+- Worktree で `.env.keys` が必要になった場合でも、**自動でコピーしない**。まず `.env.keys` なしで進められない具体的な理由（失敗しているコマンド、復号が必要な検証内容など）を確認し、その理由、コピー元とコピー先の絶対パス、実行予定コマンド、コミットしない確認をユーザーに提示して、**明示的な許可を得てから**コピーする。
+- ユーザーが許可していない段階では、`.env.keys` の中身を表示したり、ログへ出したり、別ファイルへ退避したりしない。必要なら存在確認・パス確認・ファイル権限確認までに留める。
 
 ### `.env.keys` を持ってくる例
 
 1. **親のワークツリーからコピー**（同一マシンで親が既にセットアップ済みのとき）  
-   `git worktree list` の**先頭行**が親のパス。親のリポジトリルートにある `.env.keys` を、**子のリポジトリルート**にコピーする。
+   `git worktree list` の**先頭行**が親のパス。親のリポジトリルートにある `.env.keys` を、**子のリポジトリルート**にコピーする。実行前に、次の形でユーザー確認を挟む。
+
+   ```text
+   worktree で復号が必要です。以下のコピーを実行してよいですか？
+   why:  <失敗しているコマンドや、復号が必要な検証内容>
+   from: /path/to/parent/repo/.env.keys
+   to:   /path/to/child/worktree/.env.keys
+   command: cp /path/to/parent/repo/.env.keys /path/to/child/worktree/.env.keys && chmod 600 /path/to/child/worktree/.env.keys
+   note: .env.keys の中身は表示せず、git add しません。
+   ```
+
+   許可後にだけ実行する。
 
    ```bash
    # 例: 親パスを確認してから（パスは環境に合わせる）
    git worktree list
    cp /path/to/parent/repo/.env.keys /path/to/child/worktree/.env.keys
+   chmod 600 /path/to/child/worktree/.env.keys
    ```
 
 2. **1Password / 社内の秘密管理 / 別端末**など、チームの定めた経路で平文のキーや `.env.keys` を受け取る（worktree に限らない通常運用と同じ）。

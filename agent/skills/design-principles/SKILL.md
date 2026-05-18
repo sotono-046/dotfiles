@@ -1,6 +1,6 @@
 ---
 name: design-principles
-description: Enforce a precise, minimal design system inspired by Linear, Notion, and Stripe. Use this skill when building dashboards, admin interfaces, or any UI that needs Jony Ive-level precision - clean, modern, minimalist with taste. Every pixel matters.
+description: Linear/Notion/Stripe 風の精密でミニマルなデザインシステムを適用。ダッシュボード・管理画面・SaaS UI など Jony Ive 級の精度が必要な UI を作る際に使用。
 ---
 
 # Design Principles
