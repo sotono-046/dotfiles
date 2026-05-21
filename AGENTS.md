@@ -56,6 +56,7 @@
 
 1. **`git-ops`**: Gitを操作するときは必ず参照する
 2. **`task-orchestration`**: 並列処理が可能なタスクは積極的に並列化する。サブエージェントは10個でも20個でも同時起動してよい
+3. **`agent-note-writing`**: Obsidian保存、SOW、Issue下書き、調査メモ、運用ルールなど後で再利用するドキュメントを書くときは必ず参照する。`保存して`、`メモして`、`記録して`、`SOW作って`、`Issue下書き`、`ドキュメント化` で使用し、repo作業では project / repository / branch を frontmatter と本文に明記する。外部Issue/PR/共有Doc作成は明示指示があるまで下書きまたは該当Skill/toolへの引き継ぎで止める。
 
 ## 使い分け
 

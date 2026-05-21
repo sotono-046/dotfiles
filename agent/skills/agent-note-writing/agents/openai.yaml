@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Note Writing"
+  short_description: "Obsidian notes, SOWs, issue and doc drafts"
+  default_prompt: "Use $agent-note-writing for Obsidian agent notes, SOWs, and issue/doc drafts; save only when saving is explicit, and hand off external creation to the relevant tool or skill."
