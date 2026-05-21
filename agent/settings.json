@@ -13,7 +13,7 @@
       "Read",
       "Write(//Users/sotono/dotfiles/**)",
       "Edit(//Users/sotono/dotfiles/**)",
-      "Bash(claude -p:*)",
+      "Bash(timeout 1800 codex exec:*)",
       "Bash(gh issue:*)",
       "Bash(mkdir -p:*)",
       "Bash(wc:*)",
