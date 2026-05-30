@@ -1,77 +1,30 @@
-## 日本語応対
+# Repository Guidelines
 
-すべてのコミュニケーションは日本語で行います。
+## Project Structure & Module Organization
 
-# MCP ツールを積極活用する
+This repository stores personal dotfiles and agent configuration. Root files are user-facing configs: `.zshrc`, `.tmux.conf`, `starship.toml`, `zellij.conf`, `zellij.kdl`, `ccstatusline.json`, `Brewfile`, and `install.sh`. `raycast/` contains Raycast helper scripts. `agent/` contains Codex/Claude configuration, with `agent/skills/` for skill packages, `agent/commands/` for slash-command prompts, `agent/agents/` for subagent definitions, and `agent/settings.json` for tool permissions and hooks. Follow `agent/AGENTS.md` when changing files under `agent/`.
 
-## 重要な MCP サーバー
+## Build, Test, and Development Commands
 
-以下の MCP ツールは特に重要であり、該当する場面では必ず使用すること：
+- `./install.sh`: symlinks dotfiles into their expected locations and installs/configures local tooling.
+- `brew bundle --file Brewfile`: installs Homebrew dependencies declared by this repo.
+- `zsh -n .zshrc install.sh raycast/*.sh`: checks shell syntax without executing scripts.
+- `git diff --check`: detects whitespace errors before committing.
 
-### Serena（コード解析・編集）
+There is no single build step. Validate the specific config you touched, then run the lightweight checks above.
 
-**コードベースの理解・編集には Serena を最優先で使用する。**
+## Coding Style & Naming Conventions
 
-- **`get_symbols_overview`**: ファイルの構造を把握する最初のステップ
-- **`find_symbol`**: シンボル（クラス、関数、メソッド）を検索・取得
-- **`find_referencing_symbols`**: シンボルの参照箇所を特定
-- **`replace_symbol_body`**: シンボル単位での精密な編集
-- **`insert_before_symbol` / `insert_after_symbol`**: 新しいコードの挿入
-- **`search_for_pattern`**: 柔軟なパターン検索
+Use shell scripts for setup and automation, with `#!/usr/bin/env zsh` or the existing interpreter style. Prefer two-space indentation in shell control blocks and keep commands readable over clever. Quote paths and variables unless intentional word splitting is required. Use lowercase, hyphenated names for new command or skill directories when possible, matching `agent/skills/git-ops` and `agent/skills/green-loop`. Markdown files should use concise headings, examples, and direct instructions.
 
-**原則**: ファイル全体を読むのではなく、シンボル単位で必要な情報だけを取得する。トークン効率を常に意識する。
+## Testing Guidelines
 
-### Context7（ドキュメント参照）
+Test changes with the narrowest safe command. For shell edits, run `zsh -n` on the changed script and, when practical, execute the command in a temporary environment before touching real dotfiles. For agent skills and commands, inspect the rendered Markdown and verify referenced paths, scripts, and trigger phrases exist. For install changes, prefer a dry review of symlink targets before running `./install.sh`.
 
-**ライブラリやフレームワークについて触るときに、最新ドキュメントを常に把握するため、 Context7 を使用する。**
+## Commit & Pull Request Guidelines
 
-1. **`resolve-library-id`**: ライブラリ名から Context7 ID を解決
-2. **`query-docs`**: 解決した ID を使ってドキュメントを検索
+Git history uses Conventional Commit style such as `feat(starship): ...`, `fix(zshrc): ...`, `docs(skills): ...`, and `chore(plugin-creator): ...`. Keep commits focused by area. Pull requests should explain the affected config or agent workflow, list validation commands run, and call out any local-machine side effects such as symlink changes, package installs, or permission updates.
 
-**使用例**:
+## Security & Configuration Tips
 
-- 新しいライブラリの使い方を調べる
-- API の正確な仕様を確認する
-- 最新のベストプラクティスを参照する
-
-## MCP 使用の判断基準
-
-| 状況                         | 使用するツール                                 |
-| ---------------------------- | ---------------------------------------------- |
-| コードの構造を理解したい     | Serena (`get_symbols_overview`, `find_symbol`) |
-| 特定のシンボルを編集したい   | Serena (`replace_symbol_body`)                 |
-| 参照箇所を調べたい           | Serena (`find_referencing_symbols`)            |
-| ライブラリの使い方を調べたい | Context7                                       |
-| 最新の API 仕様を確認したい  | Context7                                       |
-
-# Skill と Subagent を積極活用する
-
-## スキルの参照
-
-**必ずスキルを参照して使用すること。** 作業開始前に、該当するスキルが存在するか確認し、存在する場合は必ずそのスキルファイルを読み、手順/制約をそのまま適用する。
-
-## 重要なスキル
-
-以下のスキルは特に重要であり、該当するタスクでは必ず使用すること：
-
-1. **`git-ops`**: Gitを操作するときは必ず参照する
-2. **`task-orchestration`**: 並列処理が可能なタスクは積極的に並列化する。サブエージェントは10個でも20個でも同時起動してよい
-3. **`agent-note-writing`**: Obsidian保存、SOW、Issue下書き、調査メモ、運用ルールなど後で再利用するドキュメントを書くときは必ず参照する。`保存して`、`メモして`、`記録して`、`SOW作って`、`Issue下書き`、`ドキュメント化` で使用し、repo作業では project / repository / branch を frontmatter と本文に明記する。外部Issue/PR/共有Doc作成は明示指示があるまで下書きまたは該当Skill/toolへの引き継ぎで止める。
-
-## 使い分け
-
-- **Skill**: 専門知識が必要なタスク → 作業開始前に該当するスキルファイルを読み、手順/制約をそのまま適用する。宣言だけで終わらせない。
-- **Subagent**: 独立コンテキストが有効なタスク（リファクタリング・レビュー・広範囲探索など）、または並列実行したい場合に委任する。
-
-※ 両者は併用可。Skill の知識を Subagent に渡して実行することもある。
-※ 小さいタスクで該当する Skill/Subagent がない場合は、通常フローで進める。
-
-# ショートカット指示
-
-## `dig`
-
-- `plan-digger`サブエージェントでプランレビューを実施
-
-## `品質チェック`
-
-- `code-quality-reviewer`サブエージェントでTypeScript/リントエラーの検出・修正
+Do not commit machine-local secrets, private tokens, generated caches, or decrypted environment files. Keep permission changes in `agent/settings.json` minimal and explain why broader tool access is needed.
