@@ -20,10 +20,10 @@
 | `/CreateBranch`       | ブランチ作成（プラン策定→レビュー→作成） |
 | `/InitAgent`          | AGENTSとCLAUDEの初期化                   |
 | `/IssueMasher`        | イシュー対応                             |
-| `/Rabbit`             | CodeRabbitレビュー指示書                 |
 | `/SecurityChecker`    | セキュリティ調査・対策プラン指示書       |
 | `/SkillCreator`       | スキル作成                               |
-| `/wc_WorktreeCreaner` | ワークツリー掃除                         |
+| `/setmain`            | メイン開発ブランチへ戻して最新化         |
+| `/wc_WorkingtreeCreaner` | ワークツリー掃除                         |
 
 ## `./skills`
 
