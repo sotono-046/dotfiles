@@ -1,6 +1,37 @@
 # OSC無効化を最優先で実行
 export STARSHIP_DISABLE_OSC=true
 
+# Ghostty 等の macOS ターミナルは非 login shell のため .zprofile を明示的に読み込む
+if [[ -z "${ZPROFILE_SOURCED:-}" && -f "$HOME/.zprofile" ]]; then
+  ZPROFILE_SOURCED=1
+  source "$HOME/.zprofile"
+fi
+
+# Ghostty shell integration: Starship / SSH との競合を抑止
+if [[ -n "${GHOSTTY_RESOURCES_DIR:-}" ]]; then
+  # no-ssh-* が部分一致判定で効かず ssh ラッパーが有効になるため、ssh 関連文字列を除去
+  _ghostty_features="${GHOSTTY_SHELL_FEATURES:-}"
+  _ghostty_features="${_ghostty_features//no-ssh-env/}"
+  _ghostty_features="${_ghostty_features//no-ssh-terminfo/}"
+  _ghostty_features="${_ghostty_features//ssh-env/}"
+  _ghostty_features="${_ghostty_features//ssh-terminfo/}"
+  _ghostty_features="${(j:,:)${(s:,:)${_ghostty_features}//(#m)($|,|^)/}}"
+  # PS1 書き換え・タイトル更新は Starship と競合しやすい
+  [[ "$_ghostty_features" != *no-cursor* ]] && _ghostty_features="${_ghostty_features},no-cursor"
+  [[ "$_ghostty_features" != *no-title* ]] && _ghostty_features="${_ghostty_features},no-title"
+  export GHOSTTY_SHELL_FEATURES="$_ghostty_features"
+  unset _ghostty_features
+
+  if [[ -z "${SSH_CONNECTION:-}${SSH_TTY:-}" ]]; then
+    ssh() { TERM=xterm-256color command ssh "$@"; }
+  fi
+fi
+
+# SSH 先で xterm-ghostty terminfo が無いと vim/tmux 等が壊れる
+if [[ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" && "${TERM:-}" == xterm-ghostty ]]; then
+  export TERM=xterm-256color
+fi
+
 # zshの基本設定
 fpath=(~/.zfunc $fpath)
 autoload -Uz compinit
@@ -152,3 +183,6 @@ wt() {
 if [[ ! -f "$REPOHIST_FILE" ]]; then
     touch "$REPOHIST_FILE"
 fi
+
+# Added by Devin
+export PATH="/Users/sotono/.codeium/windsurf/bin:$PATH"
