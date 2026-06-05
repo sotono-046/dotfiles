@@ -142,6 +142,7 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "claude-opus-4-7",
   "enabledMcpjsonServers": [
     "playwright"
   ],
@@ -184,5 +185,6 @@
   "skipDangerousModePermissionPrompt": true,
   "theme": "dark-ansi",
   "teammateMode": "in-process",
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "skipWorkflowUsageWarning": true
 }
