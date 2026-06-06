@@ -18,7 +18,7 @@
 | コマンド              | 用途                                     |
 | --------------------- | ---------------------------------------- |
 | `/CreateBranch`       | ブランチ作成（プラン策定→レビュー→作成） |
-| `/InitAgent`          | AGENTSとCLAUDEの初期化                   |
+| `/initagent`          | AGENTSとCLAUDEの初期化                   |
 | `/IssueMasher`        | イシュー対応                             |
 | `/SecurityChecker`    | セキュリティ調査・対策プラン指示書       |
 | `/SkillCreator`       | スキル作成                               |
