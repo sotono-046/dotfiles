@@ -168,6 +168,28 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/sotono/.claude/hooks/session-start-discord.sh"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/sotono/.claude/hooks/session-end-discord.sh"
+          }
+        ]
+      }
     ]
   },
   "worktree": {
@@ -183,8 +205,10 @@
   "effortLevel": "medium",
   "plansDirectory": "./.temp/plans",
   "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
   "theme": "dark-ansi",
   "teammateMode": "in-process",
+  "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "skipWorkflowUsageWarning": true
+  "remoteControlAtStartup": true
 }
