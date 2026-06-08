@@ -49,6 +49,7 @@
 1. `git-ops`: commit / PR 作成 / worktree 分離など、履歴やリモート状態に影響する Git 操作では必ず参照する（`git status` / `git diff` などの読み取りのみの場合は不要）
 2. `task-orchestration`: 独立性が高く成果物が重複しないサブタスクに限り並列化する。条件を満たせばサブエージェントを多数（10〜20 個規模でも）同時起動してよいが、過剰起動・重複作業・コスト増を避けるため必要最小限の数にとどめる
 3. `agent-note-writing`: Obsidian 保存、SOW、Issue 下書き、調査メモ、運用ルールなど後で再利用するドキュメントを書くときは必ず参照する。`保存して`、`メモして`、`記録して`、`SOW作って`、`Issue下書き`、`ドキュメント化` で使用し、repo 作業では project / repository / branch を frontmatter と本文に明記する。外部 Issue/PR/共有 Doc の作成は明示指示があるまで下書き、または該当 Skill/tool への引き継ぎで止める
+4. `cursor-composer-orchestration`: Cursor Composer を実装役として使える環境では積極的に参照する。思考・設計・分解・レビューは現在動いている司令塔エージェント（Codex / Claude / その subagent）が担い、Cursor には緻密に定義した bounded code edit のみを AppleScript 経由で委譲する。Cursor に広い設計判断、Git 操作、スコープ未定義の作業を丸投げしない
 
 ### 使い分け
 
