@@ -1,30 +1,30 @@
-# Repository Guidelines
+# リポジトリガイドライン
 
-## Project Structure & Module Organization
+## プロジェクト構成
 
-This repository stores personal dotfiles and agent configuration. Root files are user-facing configs: `.zshrc`, `.tmux.conf`, `starship.toml`, `zellij.conf`, `zellij.kdl`, `ccstatusline.json`, `Brewfile`, and `install.sh`. `raycast/` contains Raycast helper scripts. `agent/` contains Codex/Claude configuration, with `agent/skills/` for skill packages, `agent/commands/` for slash-command prompts, `agent/agents/` for subagent definitions, and `agent/settings.json` for tool permissions and hooks. Follow `agent/AGENTS.md` when changing files under `agent/`.
+このリポジトリは個人用 dotfiles とエージェント設定を管理します。ルート直下の `.zshrc`、`.tmux.conf`、`starship.toml`、`zellij.conf`、`zellij.kdl`、`ccstatusline.json`、`Brewfile`、`install.sh` はユーザー環境に直接反映される設定です。`raycast/` には Raycast 用の補助スクリプトがあります。`agent/` は Codex / Claude 向け設定で、`agent/skills/` は skill パッケージ、`agent/commands/` は slash command プロンプト、`agent/agents/` は subagent 定義、`agent/settings.json` はツール権限と hook を管理します。`agent/` 配下を変更するときは `agent/AGENTS.md` にも従ってください。
 
-## Build, Test, and Development Commands
+## 開発・検証コマンド
 
-- `./install.sh`: symlinks dotfiles into their expected locations and installs/configures local tooling.
-- `brew bundle --file Brewfile`: installs Homebrew dependencies declared by this repo.
-- `zsh -n .zshrc install.sh raycast/*.sh`: checks shell syntax without executing scripts.
-- `git diff --check`: detects whitespace errors before committing.
+- `./install.sh`: dotfiles を所定の場所へ symlink し、ローカルツールをインストール / 設定します。
+- `brew bundle --file Brewfile`: このリポジトリで宣言した Homebrew 依存関係をインストールします。
+- `zsh -n .zshrc install.sh raycast/*.sh`: shell スクリプトを実行せずに構文チェックします。
+- `git diff --check`: commit 前に whitespace error を検出します。
 
-There is no single build step. Validate the specific config you touched, then run the lightweight checks above.
+単一の build step はありません。触った設定に応じて最小限の検証を行い、そのうえで上記の軽量チェックを実行してください。
 
-## Coding Style & Naming Conventions
+## コーディングスタイルと命名
 
-Use shell scripts for setup and automation, with `#!/usr/bin/env zsh` or the existing interpreter style. Prefer two-space indentation in shell control blocks and keep commands readable over clever. Quote paths and variables unless intentional word splitting is required. Use lowercase, hyphenated names for new command or skill directories when possible, matching `agent/skills/git-ops` and `agent/skills/green-loop`. Markdown files should use concise headings, examples, and direct instructions.
+セットアップや自動化は shell script を基本とし、`#!/usr/bin/env zsh` または既存ファイルの interpreter style に合わせます。shell の制御ブロックは 2 space indentation を優先し、凝った書き方より読みやすい command を選びます。意図的な word splitting が必要な場合を除き、path と variable は quote してください。新しい command や skill directory は、`agent/skills/git-ops` や `agent/skills/green-loop` に合わせて lowercase hyphenated name を使います。Markdown は簡潔な見出し、例、直接的な指示を優先します。
 
-## Testing Guidelines
+## テストとレビュー方針
 
-Test changes with the narrowest safe command. For shell edits, run `zsh -n` on the changed script and, when practical, execute the command in a temporary environment before touching real dotfiles. For agent skills and commands, inspect the rendered Markdown and verify referenced paths, scripts, and trigger phrases exist. For install changes, prefer a dry review of symlink targets before running `./install.sh`.
+変更内容に対して最も狭く安全な検証を実行します。shell を編集した場合は、対象 script に `zsh -n` を通し、可能なら実環境に影響しない一時環境で command を実行します。agent skill や command を編集した場合は、Markdown の表示、参照 path、script、trigger phrase が存在することを確認します。新しい skill、slash command、エージェント向けプロンプトを作成または大幅改訂した場合は、`agent/skills/empirical-prompt-tuning/SKILL.md` を読み、別エージェントによる実行レビューで不明瞭点を洗い出してからブラッシュアップしてください。subagent dispatch が使えない環境では、empirical evaluation を実施できなかったことを明記します。install 周りの変更では、`./install.sh` を走らせる前に symlink target を dry review してください。
 
-## Commit & Pull Request Guidelines
+## Commit と Pull Request
 
-Git history uses Conventional Commit style such as `feat(starship): ...`, `fix(zshrc): ...`, `docs(skills): ...`, and `chore(plugin-creator): ...`. Keep commits focused by area. Pull requests should explain the affected config or agent workflow, list validation commands run, and call out any local-machine side effects such as symlink changes, package installs, or permission updates.
+Git history は `feat(starship): ...`、`fix(zshrc): ...`、`docs(skills): ...`、`chore(plugin-creator): ...` のような Conventional Commit style を使います。commit は対象領域ごとに小さく保ってください。Pull Request では、影響する設定または agent workflow、実行した検証 command、symlink 変更・package install・permission 更新などローカルマシンへの副作用を説明します。
 
-## Security & Configuration Tips
+## Security と設定管理
 
-Do not commit machine-local secrets, private tokens, generated caches, or decrypted environment files. Keep permission changes in `agent/settings.json` minimal and explain why broader tool access is needed.
+machine-local secret、private token、generated cache、復号済み environment file は commit しないでください。`agent/settings.json` の permission 変更は最小限にし、広い tool access が必要な理由を説明します。
