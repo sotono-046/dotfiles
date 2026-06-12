@@ -62,10 +62,12 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # Added by Antigravity
 export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 
-# Gitリポジトリ履歴ファイル
+# Git リポジトリ選択・移動コマンド群
+# WORK_DIR 配下の .git を fzf で選び、cd や IDE / エージェント起動まで一気通貫で行う。
 export REPOHIST_FILE="$HOME/.repo_history"
 export WORK_DIR="$HOME/Documents/_work"
 
+# 指定リポジトリの worktree 一覧を「ブランチ名<TAB>パス」形式で出力する内部関数
 _git_worktree_choices() {
     local repo_path="${1:-.}"
 
@@ -97,6 +99,8 @@ _git_worktree_choices() {
         '
 }
 
+# WORK_DIR 配下の Git リポジトリ候補を「表示名<TAB>絶対パス」形式で出力する内部関数
+# ~/dotfiles は WORK_DIR 外でも常に候補に含める
 _repo_choices() {
     local work_dir="${1:-$WORK_DIR}"
 
@@ -119,7 +123,8 @@ _repo_choices() {
     } | awk -F '\t' '!seen[$2]++'
 }
 
-# リポジトリまたはワークツリーを選択する共通関数
+# fzf でリポジトリを選び、worktree が複数あればブランチも選択してパスを返す
+# usage: selected_path=$(_select_repo_or_worktree [work_dir])
 _select_repo_or_worktree() {
     local work_dir="${1:-$WORK_DIR}"
 
@@ -160,6 +165,8 @@ _select_repo_or_worktree() {
     return 0
 }
 
+# fzf でリポジトリを選んで cd する
+# usage: repo [work_dir]
 repo() {
     local work_dir="${1:-$WORK_DIR}"
     local selected_path=$(_select_repo_or_worktree "$work_dir")
@@ -170,6 +177,8 @@ repo() {
     fi
 }
 
+# fzf でリポジトリを選び、cd して Cursor で開く
+# usage: cur [work_dir]
 cur() {
     local work_dir="${1:-$WORK_DIR}"
     local selected_path=$(_select_repo_or_worktree "$work_dir")
@@ -181,25 +190,62 @@ cur() {
     fi
 }
 
-_launch_tmux_ide_or_init() {
+# tmux session 名として安全な短い worktree 識別子を作る内部関数
+_tmux_worktree_session_name() {
     local repo_path="$1"
-    local template="$HOME/dotfiles/agent/templates/ide.yml"
+    local real_path
+    real_path=$(cd "$repo_path" 2>/dev/null && pwd -P) || return 1
 
-    if [[ ! -f "$repo_path/ide.yml" ]]; then
-        if [[ -f "$template" ]]; then
-            local project_name
-            project_name=$(basename "$repo_path")
-            sed "s/__PROJECT_NAME__/${project_name}/" "$template" > "$repo_path/ide.yml"
-            echo "ide.yml をテンプレートから作成: $repo_path/ide.yml"
-        else
-            echo "tmux-ide config is not ready; running tmux-ide init..."
-            (cd "$repo_path" && tmux-ide init) || return 1
-        fi
-    fi
+    local project_name
+    project_name=$(basename "$real_path")
+    local safe_project="${project_name//[^A-Za-z0-9_-]/-}"
+    local path_hash
+    path_hash=$(printf '%s' "$real_path" | cksum | awk '{print $1}')
 
-    tmux-ide "$repo_path"
+    printf 'ide-%s-%s\n' "$safe_project" "$path_hash"
 }
 
+# worktree ごとに tmux の 4 分割 IDE session を作成し、既存ならそこへ移動する内部関数
+_launch_tmux_ide_or_init() {
+    local repo_path="$1"
+    if [[ -z "$repo_path" || ! -d "$repo_path" ]]; then
+        echo "worktree path が見つかりません: $repo_path"
+        return 1
+    fi
+
+    local session_name
+    session_name=$(_tmux_worktree_session_name "$repo_path") || return 1
+
+    if ! tmux has-session -t "$session_name" 2>/dev/null; then
+        local dev_command='zsh -lc '\''if [[ -f package.json ]] && command -v bun >/dev/null 2>&1 && grep -q "\"dev:all\"" package.json; then bun run dev:all; else exec zsh; fi'\'''
+        local claude_pane codex_pane shell_pane dev_pane
+
+        tmux new-session -d -s "$session_name" -n main -c "$repo_path" "claude --model fable" || return 1
+        claude_pane=$(tmux display-message -p -t "$session_name:0.0" '#{pane_id}') || return 1
+        tmux select-pane -t "$claude_pane" -T "Claude"
+
+        codex_pane=$(tmux split-window -h -P -F '#{pane_id}' -t "$claude_pane" -c "$repo_path" "codex") || return 1
+        tmux select-pane -t "$codex_pane" -T "Codex"
+
+        shell_pane=$(tmux split-window -v -P -F '#{pane_id}' -t "$claude_pane" -c "$repo_path") || return 1
+        tmux select-pane -t "$shell_pane" -T "Shell"
+
+        dev_pane=$(tmux split-window -v -P -F '#{pane_id}' -t "$codex_pane" -c "$repo_path" "$dev_command") || return 1
+        tmux select-pane -t "$dev_pane" -T "Dev Server"
+
+        tmux select-layout -t "$session_name:0" tiled >/dev/null
+        tmux select-pane -t "$claude_pane"
+    fi
+
+    if [[ -n "${TMUX:-}" ]]; then
+        tmux switch-client -t "$session_name"
+    else
+        tmux attach-session -t "$session_name"
+    fi
+}
+
+# fzf でリポジトリを選び、Cursor + tmux 4 分割 IDE（Claude/Codex ペイン）を起動する
+# usage: agent [work_dir]
 agent() {
     local work_dir="${1:-$WORK_DIR}"
     local selected_path=$(_select_repo_or_worktree "$work_dir")
@@ -212,6 +258,8 @@ agent() {
     fi
 }
 
+# fzf でリポジトリを選び、cd して Claude Code を起動する
+# usage: repo-claude [work_dir]
 repo-claude() {
     local work_dir="${1:-$WORK_DIR}"
     local selected_path=$(_select_repo_or_worktree "$work_dir")
@@ -223,6 +271,8 @@ repo-claude() {
     fi
 }
 
+# fzf でリポジトリを選び、cd して Codex を起動する
+# usage: repo-codex [work_dir]
 repo-codex() {
     local work_dir="${1:-$WORK_DIR}"
     local selected_path=$(_select_repo_or_worktree "$work_dir")
@@ -234,7 +284,8 @@ repo-codex() {
     fi
 }
 
-# 現在のリポジトリのワークツリーをfzfで選択して移動
+# 現在のリポジトリ内の worktree を fzf で選んで cd する（repo の第2段階と同じ UI）
+# usage: wt
 wt() {
     if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         echo "このディレクトリはGitリポジトリではありません"
@@ -258,7 +309,7 @@ wt() {
     fi
 }
 
-# 現在のリポジトリで新しい worktree を作って tmux-ide を起動する
+# 現在のリポジトリで新しい worktree を作って tmux 4 分割 IDE を起動する
 # usage: wtptmux [slug]
 #   - slug 省略時は sotono/YYYYMMDDHHMMSS のブランチを作成
 #   - slug 指定時は sotono/<slug> のブランチを作成
@@ -326,4 +377,4 @@ if [[ ! -f "$REPOHIST_FILE" ]]; then
 fi
 
 # Added by Devin
-export PATH="/Users/sotono/.codeium/windsurf/bin:$PATH"
+export PATH="$HOME/.codeium/windsurf/bin:$PATH"
