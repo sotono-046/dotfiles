@@ -142,7 +142,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "claude-opus-4-7",
+  "model": "claude-opus-4-7[1m]",
   "enabledMcpjsonServers": [
     "playwright"
   ],
@@ -208,7 +208,7 @@
   "skipWorkflowUsageWarning": true,
   "theme": "dark-ansi",
   "teammateMode": "in-process",
+  "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true,
-  "remoteControlAtStartup": true
+  "skipAutoPermissionPrompt": true
 }
