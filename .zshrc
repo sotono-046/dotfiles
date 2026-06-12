@@ -121,10 +121,10 @@ _repo_choices() {
 
 # リポジトリまたはワークツリーを選択する共通関数
 _select_repo_or_worktree() {
-    local WORK_DIR="${1:-/Users/sotono/Documents/_work}"
+    local work_dir="${1:-$WORK_DIR}"
 
     # 第1段階: メインリポジトリを選択
-    local selected_repo=$(_repo_choices "$WORK_DIR" |
+    local selected_repo=$(_repo_choices "$work_dir" |
         fzf --header 'Select Git repository' --with-nth=1 --delimiter=$'\t')
 
     if [[ -z "$selected_repo" ]]; then
@@ -161,8 +161,8 @@ _select_repo_or_worktree() {
 }
 
 repo() {
-    local WORK_DIR="${1:-/Users/sotono/Documents/_work}"
-    local selected_path=$(_select_repo_or_worktree "$WORK_DIR")
+    local work_dir="${1:-$WORK_DIR}"
+    local selected_path=$(_select_repo_or_worktree "$work_dir")
 
     if [[ -n "$selected_path" ]]; then
         cd "$selected_path"
@@ -170,9 +170,51 @@ repo() {
     fi
 }
 
+cur() {
+    local work_dir="${1:-$WORK_DIR}"
+    local selected_path=$(_select_repo_or_worktree "$work_dir")
+
+    if [[ -n "$selected_path" ]]; then
+        cd "$selected_path"
+        echo "$selected_path" >> "$REPOHIST_FILE"
+        cursor "$selected_path"
+    fi
+}
+
+_launch_tmux_ide_or_init() {
+    local repo_path="$1"
+    local template="$HOME/dotfiles/agent/templates/ide.yml"
+
+    if [[ ! -f "$repo_path/ide.yml" ]]; then
+        if [[ -f "$template" ]]; then
+            local project_name
+            project_name=$(basename "$repo_path")
+            sed "s/__PROJECT_NAME__/${project_name}/" "$template" > "$repo_path/ide.yml"
+            echo "ide.yml をテンプレートから作成: $repo_path/ide.yml"
+        else
+            echo "tmux-ide config is not ready; running tmux-ide init..."
+            (cd "$repo_path" && tmux-ide init) || return 1
+        fi
+    fi
+
+    tmux-ide "$repo_path"
+}
+
+agent() {
+    local work_dir="${1:-$WORK_DIR}"
+    local selected_path=$(_select_repo_or_worktree "$work_dir")
+
+    if [[ -n "$selected_path" ]]; then
+        cd "$selected_path"
+        echo "$selected_path" >> "$REPOHIST_FILE"
+        cursor "$selected_path"
+        _launch_tmux_ide_or_init "$selected_path"
+    fi
+}
+
 repo-claude() {
-    local WORK_DIR="${1:-/Users/sotono/Documents/_work}"
-    local selected_path=$(_select_repo_or_worktree "$WORK_DIR")
+    local work_dir="${1:-$WORK_DIR}"
+    local selected_path=$(_select_repo_or_worktree "$work_dir")
 
     if [[ -n "$selected_path" ]]; then
         cd "$selected_path"
@@ -182,8 +224,8 @@ repo-claude() {
 }
 
 repo-codex() {
-    local WORK_DIR="${1:-/Users/sotono/Documents/_work}"
-    local selected_path=$(_select_repo_or_worktree "$WORK_DIR")
+    local work_dir="${1:-$WORK_DIR}"
+    local selected_path=$(_select_repo_or_worktree "$work_dir")
 
     if [[ -n "$selected_path" ]]; then
         cd "$selected_path"
@@ -214,6 +256,68 @@ wt() {
     if [[ -n "$selected" ]]; then
         cd "$(printf '%s\n' "$selected" | cut -f2-)"
     fi
+}
+
+# 現在のリポジトリで新しい worktree を作って tmux-ide を起動する
+# usage: wtptmux [slug]
+#   - slug 省略時は sotono/YYYYMMDDHHMMSS のブランチを作成
+#   - slug 指定時は sotono/<slug> のブランチを作成
+#   - fzf でベースブランチ（ローカル + リモート、更新順）を選択
+wtptmux() {
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        echo "このディレクトリはGitリポジトリではありません"
+        return 1
+    fi
+
+    local slug="${1:-$(date +%Y%m%d%H%M%S)}"
+    local new_branch="sotono/${slug}"
+
+    if git show-ref --verify --quiet "refs/heads/${new_branch}"; then
+        echo "ブランチが既に存在します: ${new_branch}"
+        return 1
+    fi
+
+    local base_choice
+    base_choice=$({
+        git for-each-ref --sort=-committerdate refs/heads/ \
+            --format='%(committerdate:relative)%09%(refname:short)%09%(refname:short)'
+        git for-each-ref --sort=-committerdate refs/remotes/ \
+            --format='%(committerdate:relative)%09%(refname:short)%09%(refname:short)' |
+            grep -v '/HEAD$'
+    } | awk -F '\t' '!seen[$2]++' |
+        fzf --prompt='base branch> ' \
+            --header='ベースブランチを選択 (更新順)' \
+            --with-nth=1,2 --delimiter=$'\t')
+
+    if [[ -z "$base_choice" ]]; then
+        echo "キャンセルしました"
+        return 1
+    fi
+
+    local base_branch
+    base_branch=$(printf '%s\n' "$base_choice" | cut -f3-)
+
+    local base_commit="$base_branch"
+    if [[ "$base_branch" == */* ]] && git show-ref --verify --quiet "refs/remotes/${base_branch}"; then
+        base_commit="$base_branch"
+    fi
+
+    echo "Creating worktree: ${new_branch} (from ${base_branch})"
+    if ! wtp add -b "${new_branch}" "${base_commit}"; then
+        echo "wtp add に失敗しました"
+        return 1
+    fi
+
+    local worktree_path
+    worktree_path=$(wtp cd "${new_branch}") || {
+        echo "wtp cd でパスを取得できませんでした: ${new_branch}"
+        return 1
+    }
+
+    cd "${worktree_path}" || return 1
+    echo "${worktree_path}" >> "$REPOHIST_FILE"
+
+    _launch_tmux_ide_or_init "${worktree_path}"
 }
 
 # 初期化

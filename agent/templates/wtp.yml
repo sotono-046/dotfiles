@@ -1,0 +1,35 @@
+version: "1.0"
+
+defaults:
+  base_dir: ../worktrees/__PROJECT_NAME__
+
+hooks:
+  post_create:
+    - type: command
+      command: |
+        # Get the original repository path (parent of worktree)
+        ORIGINAL_REPO=$(git -C "$(git rev-parse --git-dir)" worktree list | grep -v "$PWD" | head -1 | awk '{print $1}')
+
+
+        # COPY .ENV.KEYS
+        if [[ -f "${ORIGINAL_REPO}/.env.keys" ]]; then
+          cp -f "${ORIGINAL_REPO}/.env.keys" .env.keys
+        fi
+
+        # .TEMP
+        if [[ -e "${ORIGINAL_REPO}/.temp" ]]; then
+          ln -sf "${ORIGINAL_REPO}/.temp" .temp
+        fi
+
+        # IDE.YML
+        if [[ -f "${ORIGINAL_REPO}/ide.yml" ]]; then
+          cp -f "${ORIGINAL_REPO}/ide.yml" ide.yml
+        fi
+
+        echo "Copied app .env.keys files, ide.yml, and created symlinks from original repository"
+
+    - type: command
+      command: bun install
+
+    - type: command
+      command: echo "Created new worktree!"

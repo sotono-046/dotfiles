@@ -1,0 +1,19 @@
+name: __PROJECT_NAME__
+
+# before: npm install  # optional pre-launch hook
+
+rows:
+  - size: 70%
+    panes:
+      - title: Claude
+        command: claude --model fable
+      - title: Codex
+        command: codex
+  - panes:
+      - title: Dev Server
+        command: bun run dev:all
+        # dir: apps/web       # per-pane working directory
+        # env:                 # per-pane environment variables
+        #   PORT: 3000
+      - title: Shell
+        # focus: true          # give this pane initial focus
