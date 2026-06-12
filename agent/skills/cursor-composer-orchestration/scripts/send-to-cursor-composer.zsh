@@ -1,35 +1,63 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-app_name="Cursor"
-shortcut="cmd-i"
-submit="false"
+# Cursor Agent CLI へ task packet を流し込み、headless 実行する helper。
+# 以前は AppleScript で Cursor IDE の Composer に貼り付けていたが、IDE 連携が
+# 不安定だったため `cursor-agent --print` を使う形に切り替えている。
+
+workspace=""
+model=""
+plan="false"
+force="false"
+output_format=""
+sandbox=""
+extra_args=()
 prompt_file=""
 
 usage() {
   cat <<'USAGE'
 Usage:
-  send-to-cursor-composer.zsh [--app Cursor] [--shortcut cmd-i|cmd-l|cmd-shift-i|none] [--submit] <prompt-file>
+  send-to-cursor-composer.zsh [options] <prompt-file>
   send-to-cursor-composer.zsh [options] < prompt.md
 
-Copies the prompt to the clipboard, activates Cursor, focuses Composer/chat with
-the selected shortcut, pastes the prompt, and optionally presses Return.
+Feeds the prompt to `cursor-agent --print` and streams the transcript to stdout.
+
+Options:
+  --workspace <path>            Working directory (default: cwd)
+  --model <name>                Model id (e.g. sonnet-4-thinking, gpt-5)
+  --plan                        Read-only plan mode (no edits)
+  --force                       Auto-approve tool prompts (use with tight scope)
+  --output-format <fmt>         text | json | stream-json
+  --sandbox <enabled|disabled>  Override sandbox mode
+  --                            Pass remaining args verbatim to cursor-agent
 USAGE
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --app)
-      app_name="${2:?--app requires a value}"
+    --workspace)
+      workspace="${2:?--workspace requires a value}"
       shift 2
       ;;
-    --shortcut)
-      shortcut="${2:?--shortcut requires a value}"
+    --model)
+      model="${2:?--model requires a value}"
       shift 2
       ;;
-    --submit)
-      submit="true"
+    --plan)
+      plan="true"
       shift
+      ;;
+    --force)
+      force="true"
+      shift
+      ;;
+    --output-format)
+      output_format="${2:?--output-format requires a value}"
+      shift 2
+      ;;
+    --sandbox)
+      sandbox="${2:?--sandbox requires a value}"
+      shift 2
       ;;
     -h|--help)
       usage
@@ -37,6 +65,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --)
       shift
+      extra_args+=("$@")
       break
       ;;
     -*)
@@ -54,20 +83,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-if [[ $# -gt 0 ]]; then
-  print -u2 "Unexpected arguments: $*"
-  exit 2
-fi
-
-case "$shortcut" in
-  cmd-i|cmd-l|cmd-shift-i|none) ;;
-  *)
-    print -u2 "Unsupported shortcut: $shortcut"
-    print -u2 "Use one of: cmd-i, cmd-l, cmd-shift-i, none"
-    exit 2
-    ;;
-esac
 
 if [[ -n "$prompt_file" ]]; then
   if [[ ! -f "$prompt_file" ]]; then
@@ -88,47 +103,19 @@ if [[ -z "${prompt_content//[$' \t\r\n']/}" ]]; then
   exit 1
 fi
 
-printf "%s" "$prompt_content" | pbcopy
+if ! command -v cursor-agent >/dev/null 2>&1; then
+  print -u2 "cursor-agent CLI is not on PATH. Install it or run 'cursor-agent login' first."
+  exit 127
+fi
 
-osascript - "$app_name" "$shortcut" "$submit" <<'APPLESCRIPT'
-on run argv
-  set appName to item 1 of argv
-  set shortcutName to item 2 of argv
-  set shouldSubmit to item 3 of argv
+cmd=(cursor-agent --print)
+[[ -n "$workspace" ]] && cmd+=(--workspace "$workspace")
+[[ -n "$model" ]] && cmd+=(--model "$model")
+[[ "$plan" == "true" ]] && cmd+=(--plan)
+[[ "$force" == "true" ]] && cmd+=(--force)
+[[ -n "$output_format" ]] && cmd+=(--output-format "$output_format")
+[[ -n "$sandbox" ]] && cmd+=(--sandbox "$sandbox")
+(( ${#extra_args[@]} > 0 )) && cmd+=("${extra_args[@]}")
 
-  tell application appName to activate
-  delay 0.25
-
-  tell application "System Events"
-    if not (exists process appName) then error "Process is not available: " & appName
-    tell process appName
-      set frontmost to true
-      delay 0.15
-
-      if shortcutName is "cmd-i" then
-        keystroke "i" using {command down}
-        delay 0.3
-      else if shortcutName is "cmd-l" then
-        keystroke "l" using {command down}
-        delay 0.3
-      else if shortcutName is "cmd-shift-i" then
-        keystroke "i" using {command down, shift down}
-        delay 0.3
-      else if shortcutName is "none" then
-        delay 0.1
-      else
-        error "Unsupported shortcut: " & shortcutName
-      end if
-
-      keystroke "v" using {command down}
-
-      if shouldSubmit is "true" then
-        delay 0.15
-        key code 36
-      end if
-    end tell
-  end tell
-end run
-APPLESCRIPT
-
-print "Sent prompt to ${app_name} using shortcut ${shortcut}."
+print -u2 "Running: ${cmd[*]}"
+print "$prompt_content" | "${cmd[@]}"
