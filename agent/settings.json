@@ -200,6 +200,10 @@
     "command": "bunx -y ccstatusline@latest",
     "padding": 0
   },
+  "enabledPlugins": {
+    "vercel@claude-plugins-official": true,
+    "fairy-tale@fairy-tale-marketplace": true
+  },
   "language": "Japanese",
   "alwaysThinkingEnabled": false,
   "effortLevel": "medium",
@@ -210,5 +214,13 @@
   "teammateMode": "in-process",
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "extraKnownMarketplaces": {
+    "fairy-tale-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "bonginkan/fairy_tale"
+      }
+    }
+  }
 }

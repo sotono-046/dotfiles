@@ -52,6 +52,14 @@ Think in English, interact with the user in Japanese.
 2. `task-orchestration`: 独立性が高く成果物が重複しないサブタスクに限り並列化する。条件を満たせばサブエージェントを多数（10〜20 個規模でも）同時起動してよいが、過剰起動・重複作業・コスト増を避けるため必要最小限の数にとどめる
 3. `agent-note-writing`: Obsidian 保存、SOW、Issue 下書き、調査メモ、運用ルールなど後で再利用するドキュメントを書くときは必ず参照する。`保存して`、`メモして`、`記録して`、`SOW作って`、`Issue下書き`、`ドキュメント化` で使用し、repo 作業では project / repository / branch を frontmatter と本文に明記する。外部 Issue/PR/共有 Doc の作成は明示指示があるまで下書き、または該当 Skill/tool への引き継ぎで止める
 4. `cursor-composer-orchestration`: Cursor を実装役として使える環境では積極的に参照する。思考・設計・分解・レビューは現在動いている司令塔エージェント（Codex / Claude / その subagent）が担い、Cursor には緻密に定義した bounded code edit のみを `cursor-agent` CLI 経由で委譲する（IDE 連携が不安定だったため AppleScript ではなく CLI を使う）。Cursor に広い設計判断、Git 操作、スコープ未定義の作業を丸投げしない
+5. `fairy-tale`: 以下のいずれかに当てはまるタスクでは、作業開始前に `fairy-tale` スキルを読み、Glass Slipper Gate（予算: 最大サブタスク数 / ファイル数 / web 検索数 / tool call 数 / 経過時間）と Implementation Validation Gate（focused check + 隣接互換チェック + validation ledger）を適用する。description マッチを待たず、条件に該当した時点で能動的にロードする。
+   - 長時間コーディング / コードベース横断のリファクタリング・移行（Fable Harness）
+   - 多エージェント fan-out、長い autonomous run、context resume を伴う作業
+   - 防御目的のセキュリティレビュー（Mythos / Cyber Frontier Defense Harness、OWASP LLM 含む）
+   - 法務 / HLE 風の閉形式回答 / bio・health / 財務・文書分析 / 3D・CAD / ARC 系発見タスク（Domain Router で経路選択）
+   - SWE-Bench Pro / ExploitBench などのベンチマーク再現・フィードバック適用
+   - 同じ失敗が 3 回以上繰り返される、または validation ledger を作れないとき（Fairy Fusion 自動発火条件）
+   - 小規模な単発タスク・対話・ドキュメント執筆のみの作業では適用しない（過剰になるため）
 
 ### 使い分け
 
