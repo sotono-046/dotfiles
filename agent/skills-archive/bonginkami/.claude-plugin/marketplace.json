@@ -1,0 +1,16 @@
+{
+  "name": "bonginkami",
+  "description": "Gothic document typesetting skill for Claude Code.",
+  "owner": {
+    "name": "bonginkan"
+  },
+  "plugins": [
+    {
+      "name": "bonginkami",
+      "description": "Typeset professional documents: resumes, one-pagers, white papers, letters, portfolios, slide decks. Warm parchment, ink-blue accent, sans-serif (gothic) hierarchy. English and Japanese.",
+      "category": "documents",
+      "source": "./",
+      "homepage": "https://github.com/bonginkan/design-bonginkami"
+    }
+  ]
+}

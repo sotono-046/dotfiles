@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     SAMPLES · kami design system (Japanese)
+     「スライド的に使う / ドキュメント的に使う」を、架空SaaS「Kasane」の
+     でっち上げ題材で、ビジュアルあり/なしの複数パターンとして見せる
+     ギャラリーページ。各サンプルは実寸の縮小プレビュー。
+     ================================================================== -->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Kami · 組版サンプル集（スライド / ドキュメント）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Kami デザインシステムで、スライドとドキュメントを組むとどう見えるか。架空SaaS「Kasane」を題材にした、ビジュアルあり/なしの組版サンプル集。">
+<style>
+  @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/JetBrainsMono.woff2") format("woff2"); font-weight: 400 500; font-style: normal; font-display: swap; }
+  @font-face { font-family: "Noto Sans JP"; src: url("assets/fonts/NotoSansJP-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+  @font-face { font-family: "Noto Sans JP"; src: url("assets/fonts/NotoSansJP-Medium.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --warm-sand: #e8e6dc;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --brand-light:#2D5A8A;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+    --pos:       #2f6b46;
+    --neg:       #b53333;
+
+    --sans: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", YuGothic, "Helvetica Neue", Arial, sans-serif;
+    --serif: var(--sans);
+    --mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, Monaco, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--parchment); }
+  body {
+    color: var(--near-black);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ---------- Page shell ---------- */
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 80px 48px 120px; }
+
+  .page-head { border-bottom: 1px solid var(--border-soft); padding-bottom: 36px; margin-bottom: 44px; }
+  .page-head .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--stone); margin-bottom: 14px;
+  }
+  .page-head h1 { font-size: 46px; font-weight: 500; letter-spacing: -0.4px; line-height: 1.1; color: var(--near-black); }
+  .page-head h1 .cn { color: var(--brand); margin-left: 12px; }
+  .page-head .lede { font-size: 15px; color: var(--olive); line-height: 1.7; margin-top: 16px; max-width: 720px; }
+  .page-head .nav { margin-top: 20px; display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; }
+  .page-head .nav a { color: var(--brand); text-decoration: none; font-weight: 500; }
+
+  /* ---------- Sample block ---------- */
+  .group-title {
+    font-size: 13px; font-family: var(--mono); letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--brand); margin: 56px 0 4px;
+  }
+  .group-desc { font-size: 14px; color: var(--olive); margin-bottom: 28px; max-width: 720px; line-height: 1.65; }
+
+  .sample { margin-bottom: 52px; }
+  .sample-meta { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .sample-meta .kind { font-size: 16px; font-weight: 500; color: var(--near-black); }
+  .sample-meta .tags { display: flex; gap: 6px; }
+  .sample-meta .tag {
+    font-size: 11px; font-family: var(--mono); letter-spacing: 0.5px;
+    background: var(--tag-bg); color: var(--brand);
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .sample-meta .tag.alt { background: var(--warm-sand); color: var(--dark-warm); }
+  .sample-note { font-size: 13px; color: var(--stone); margin-bottom: 14px; line-height: 1.6; }
+
+  /* Preview frame: the "paper" the artifact lands on */
+  .preview {
+    background: var(--ivory);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    box-shadow: 0 1px 0 var(--border-soft), 0 18px 40px -28px rgba(20,19,19,0.4);
+    overflow: hidden;
+  }
+  .preview.slide-preview { padding: 0; }
+
+  /* ====== SLIDE artifact (16:9) ====== */
+  .slide {
+    aspect-ratio: 280 / 158;
+    background: var(--parchment);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    /* container-relative sizing so the slide scales down cleanly */
+    container-type: inline-size;
+  }
+  .slide-inner {
+    position: absolute; inset: 0;
+    padding: 5.7cqw 7.1cqw;
+    display: flex; flex-direction: column;
+  }
+  .slide .eyebrow {
+    font-family: var(--mono); font-size: 2.0cqw; letter-spacing: 0.5cqw;
+    text-transform: uppercase; color: var(--stone);
+  }
+  .slide h2 { font-size: 5.4cqw; font-weight: 500; line-height: 1.18; color: var(--near-black); margin-top: 1cqw; }
+  .slide h3 { font-size: 3.3cqw; font-weight: 500; color: var(--brand); margin-bottom: 0.6cqw; }
+  .slide p  { font-size: 2.5cqw; line-height: 1.5; color: var(--dark-warm); }
+  .slide .page-num { position: absolute; bottom: 4cqw; right: 7.1cqw; font-family: var(--mono); font-size: 2cqw; color: var(--stone); }
+  .slide .foot-mark { position: absolute; bottom: 4cqw; left: 7.1cqw; font-family: var(--mono); font-size: 2cqw; color: var(--stone); letter-spacing: 0.4cqw; text-transform: uppercase; }
+
+  .slide.cover { justify-content: center; }
+  .slide.cover .slide-inner { justify-content: center; }
+  .slide.cover h1 { font-size: 9cqw; font-weight: 500; letter-spacing: -0.2cqw; line-height: 1.05; color: var(--near-black); }
+  .slide.cover h1 .cn { color: var(--brand); margin-left: 1.5cqw; }
+  .slide.cover .sub { font-size: 3.4cqw; color: var(--olive); margin-top: 2.4cqw; max-width: 70%; line-height: 1.5; }
+  .slide.cover .meta { font-family: var(--mono); font-size: 2.2cqw; letter-spacing: 0.4cqw; text-transform: uppercase; color: var(--stone); margin-top: 5cqw; }
+  .slide.cover .rule { width: 16cqw; height: 0.5cqw; background: var(--brand); margin-top: 3cqw; }
+
+  .slide .c2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5cqw; margin-top: 2cqw; flex: 1; }
+  .slide .col p { font-size: 2.5cqw; }
+
+  .slide .metrics { display: flex; gap: 6cqw; margin-top: 3cqw; }
+  .slide .metric .v { font-size: 7cqw; font-weight: 500; color: var(--brand); line-height: 1; font-variant-numeric: tabular-nums; }
+  .slide .metric .l { font-size: 2.2cqw; color: var(--olive); margin-top: 1cqw; }
+
+  .slide .t2x2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4cqw 6cqw; margin-top: 3cqw; flex: 1; align-content: start; }
+  .slide .mod .mt { font-size: 3cqw; font-weight: 500; color: var(--near-black); display: flex; align-items: baseline; gap: 1.5cqw; }
+  .slide .mod .mt .ml { color: var(--brand); font-size: 4cqw; }
+  .slide .mod .mb { font-size: 2.3cqw; color: var(--olive); margin-top: 0.8cqw; line-height: 1.45; }
+
+  .slide .visual-row { display: grid; grid-template-columns: 1.15fr 1fr; gap: 5cqw; margin-top: 2cqw; flex: 1; align-items: center; }
+  .slide .visual-row svg { width: 100%; height: auto; }
+  .slide .vlist { display: flex; flex-direction: column; gap: 1.6cqw; }
+  .slide .vlist .vi { font-size: 2.5cqw; color: var(--dark-warm); display: flex; gap: 1.5cqw; align-items: baseline; }
+  .slide .vlist .vi b { color: var(--brand); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  .slide .co {
+    position: absolute; left: 7.1cqw; right: 7.1cqw; bottom: 9cqw;
+    border-left: 0.7cqw solid var(--brand); padding-left: 3cqw;
+    font-size: 2.8cqw; color: var(--brand); font-weight: 500; line-height: 1.4;
+  }
+
+  /* ====== DOCUMENT artifact (A4 portrait) ====== */
+  .doc {
+    aspect-ratio: 210 / 297;
+    background: var(--parchment);
+    border-radius: 4px;
+    overflow: hidden;
+    container-type: inline-size;
+    position: relative;
+  }
+  .doc-inner { position: absolute; inset: 0; padding: 6cqw 6.6cqw; overflow: hidden; }
+  .doc .eyebrow { font-family: var(--mono); font-size: 1.5cqw; letter-spacing: 0.6cqw; text-transform: uppercase; color: var(--brand); }
+  .doc h1 { font-size: 6cqw; font-weight: 500; line-height: 1.12; color: var(--near-black); letter-spacing: -0.1cqw; }
+  .doc .doc-sub { font-size: 2.3cqw; color: var(--olive); margin-top: 1.2cqw; }
+  .doc .doc-meta { font-family: var(--mono); font-size: 1.5cqw; color: var(--stone); margin-top: 1.2cqw; letter-spacing: 0.2cqw; }
+  .doc h2 { font-size: 3cqw; font-weight: 500; color: var(--near-black); border-left: 0.6cqw solid var(--brand); padding-left: 1.6cqw; margin: 3.5cqw 0 1.4cqw; }
+  .doc h3 { font-size: 2.3cqw; font-weight: 500; color: var(--dark-warm); margin: 2cqw 0 0.8cqw; }
+  .doc p { font-size: 1.9cqw; line-height: 1.65; color: var(--near-black); margin-bottom: 1.4cqw; }
+  .doc p.lead { font-size: 2.2cqw; color: var(--dark-warm); line-height: 1.6; }
+  .doc .hl { color: var(--brand); font-weight: 500; }
+  .doc ul { margin: 1cqw 0 1.6cqw 3cqw; }
+  .doc li { font-size: 1.9cqw; line-height: 1.6; color: var(--near-black); margin-bottom: 0.5cqw; }
+  .doc li::marker { color: var(--brand); }
+
+  .doc .doc-metrics { display: flex; gap: 5cqw; padding: 2cqw 0; border-top: 0.2cqw dotted var(--border); border-bottom: 0.2cqw dotted var(--border); margin: 2cqw 0 3cqw; }
+  .doc .doc-metrics .m .v { font-size: 4.2cqw; font-weight: 500; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1; }
+  .doc .doc-metrics .m .l { font-size: 1.7cqw; color: var(--olive); margin-top: 0.6cqw; }
+
+  .doc .callout { background: var(--ivory); border-left: 0.5cqw solid var(--brand); padding: 1.8cqw 2.4cqw; border-radius: 0 3px 3px 0; margin: 2cqw 0; }
+  .doc .callout .cl-label { font-family: var(--mono); font-size: 1.4cqw; letter-spacing: 0.4cqw; text-transform: uppercase; color: var(--brand); margin-bottom: 0.6cqw; }
+  .doc .callout p { font-size: 1.85cqw; margin: 0; }
+
+  .doc table { width: 100%; border-collapse: collapse; font-size: 1.75cqw; margin: 1.6cqw 0; }
+  .doc th { text-align: left; font-weight: 500; color: var(--dark-warm); padding: 1cqw 1.4cqw; border-bottom: 0.3cqw solid var(--border); }
+  .doc td { padding: 0.9cqw 1.4cqw; border-bottom: 0.2cqw dotted var(--border); color: var(--near-black); }
+  .doc td.num, .doc th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .doc tr.total td { border-top: 0.4cqw solid var(--brand); border-bottom: none; font-weight: 500; }
+  .doc .tag { display: inline-block; font-family: var(--mono); font-size: 1.5cqw; background: var(--tag-bg); color: var(--brand); padding: 0.3cqw 1.2cqw; border-radius: 2px; }
+
+  .doc .two-col { columns: 2; column-gap: 4cqw; }
+  .doc figure { margin: 2cqw 0; }
+  .doc figure svg { width: 100%; height: auto; }
+  .doc figcaption { font-size: 1.5cqw; color: var(--stone); text-align: center; margin-top: 0.8cqw; }
+  .doc .doc-footer { position: absolute; left: 6.6cqw; right: 6.6cqw; bottom: 3.2cqw; display: flex; justify-content: space-between; font-family: var(--mono); font-size: 1.4cqw; color: var(--stone); border-top: 0.2cqw dotted var(--border); padding-top: 1.2cqw; }
+
+  .doc .risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4cqw; margin: 1.6cqw 0; }
+  .doc .risk { background: var(--ivory); border-radius: 3px; padding: 1.2cqw 1.6cqw; }
+  .doc .risk .rl { font-size: 1.6cqw; font-weight: 500; color: var(--brand); margin-bottom: 0.4cqw; }
+  .doc .risk .rd { font-size: 1.55cqw; color: var(--olive); line-height: 1.5; }
+
+  /* two-up doc layout for narrow pages */
+  .doc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  @media (max-width: 720px) { .doc-grid { grid-template-columns: 1fr; } }
+
+  footer.foot { border-top: 1px solid var(--border-soft); margin-top: 60px; padding-top: 28px; font-size: 13px; color: var(--stone); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  footer.foot a { color: var(--brand); text-decoration: none; font-weight: 500; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <div class="page-head">
+    <p class="eyebrow">Sample Gallery · 組版サンプル</p>
+    <h1>使うとどう見えるか<span class="cn">見本</span></h1>
+    <p class="lede">同じデザインシステムで「スライド」と「ドキュメント」を組むと何が起きるか。架空のチーム向けドキュメント分析 SaaS「<b>Kasane（重ね）</b>」を題材に、ビジュアルあり／なしの組版パターンを並べました。各プレビューはそのまま PDF・スライドとして書き出せる体裁です。</p>
+    <div class="nav">
+      <a href="#slides">スライド的に使う</a>
+      <a href="#docs">ドキュメント的に使う</a>
+      <a href="./index.html">← デザインシステムへ</a>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SLIDES                                                       -->
+  <!-- ============================================================ -->
+  <p class="group-title" id="slides">A · スライド的に使う（16:9）</p>
+  <p class="group-desc">投影・画面共有向けの 16:9。1スライド1メッセージ、余白を広く取り、数字とゴシックの太さ（Medium）で視線を導きます。装飾は足さず、ink blue を 1 点だけ効かせます。</p>
+
+  <!-- A1 Cover (visual: none) -->
+  <div class="sample">
+    <div class="sample-meta">
+      <span class="kind">A1 · 表紙</span>
+      <span class="tags"><span class="tag">SLIDE 16:9</span><span class="tag alt">ビジュアルなし</span></span>
+    </div>
+    <p class="sample-note">タイポグラフィだけで「掴み」を作る表紙。プロダクト名を最大ウェイト、サブと日付は控えめに。</p>
+    <div class="preview slide-preview">
+      <div class="slide cover">
+        <div class="slide-inner">
+          <p class="eyebrow">Product Keynote · 2026</p>
+          <h1>Kasane<span class="cn">重ね</span></h1>
+          <p class="sub">散らばった社内ドキュメントを、ひとつの読みやすい流れに重ねる分析ツール。</p>
+          <div class="rule"></div>
+          <p class="meta">Kasane Inc. · Spring Release</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A2 Metrics + 2col (visual: light) -->
+  <div class="sample">
+    <div class="sample-meta">
+      <span class="kind">A2 · 導入効果（KPI + 2カラム）</span>
+      <span class="tags"><span class="tag">SLIDE 16:9</span><span class="tag alt">ビジュアル軽め</span></span>
+    </div>
+    <p class="sample-note">大きな数字を主役に、左右で「課題 → 結果」を対比。数字は tabular-nums で揃える。</p>
+    <div class="preview slide-preview">
+      <div class="slide">
+        <div class="slide-inner">
+          <p class="eyebrow">Impact · 導入3ヶ月の効果</p>
+          <h2>探す時間を、読む時間に。</h2>
+          <div class="metrics">
+            <div class="metric"><div class="v">68%</div><div class="l">資料探索の削減</div></div>
+            <div class="metric"><div class="v">3.4x</div><div class="l">レビュー速度</div></div>
+            <div class="metric"><div class="v">92</div><div class="l">NPS</div></div>
+          </div>
+          <div class="c2">
+            <div class="col"><h3>これまで</h3><p>同じ調査資料が部署ごとに散在し、最新版がどれか分からないまま会議が始まっていた。</p></div>
+            <div class="col"><h3>Kasane 導入後</h3><p>関連文書が自動で束ねられ、要点と差分が先頭に並ぶ。会議は確認ではなく意思決定から始まる。</p></div>
+          </div>
+          <p class="foot-mark">Kasane</p>
+          <p class="page-num">02</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A3 Visual chart (visual: yes) -->
+  <div class="sample">
+    <div class="sample-meta">
+      <span class="kind">A3 · 成長グラフ（チャート主役）</span>
+      <span class="tags"><span class="tag">SLIDE 16:9</span><span class="tag">ビジュアルあり</span></span>
+    </div>
+    <p class="sample-note">インライン SVG の棒グラフを大きく置き、右に読みどころを箇条で添える。色は brand 1色＋トーン違い。</p>
+    <div class="preview slide-preview">
+      <div class="slide">
+        <div class="slide-inner">
+          <p class="eyebrow">Growth · 四半期の処理ドキュメント数</p>
+          <h2>使うほど、束ねる量は増える。</h2>
+          <div class="visual-row">
+            <svg viewBox="0 0 320 180" role="img" aria-label="四半期ごとの処理ドキュメント数">
+              <!-- baseline -->
+              <line x1="34" y1="150" x2="312" y2="150" stroke="#e8e6dc" stroke-width="1"/>
+              <!-- gridlines -->
+              <line x1="34" y1="110" x2="312" y2="110" stroke="#e8e6dc" stroke-width="0.6" stroke-dasharray="2 3"/>
+              <line x1="34" y1="70"  x2="312" y2="70"  stroke="#e8e6dc" stroke-width="0.6" stroke-dasharray="2 3"/>
+              <line x1="34" y1="30"  x2="312" y2="30"  stroke="#e8e6dc" stroke-width="0.6" stroke-dasharray="2 3"/>
+              <!-- bars -->
+              <rect x="50"  y="118" width="34" height="32"  rx="2" fill="#A9BBD0"/>
+              <rect x="108" y="96"  width="34" height="54"  rx="2" fill="#7E97B8"/>
+              <rect x="166" y="64"  width="34" height="86"  rx="2" fill="#4E6E97"/>
+              <rect x="224" y="34"  width="34" height="116" rx="2" fill="#1B365D"/>
+              <!-- value labels -->
+              <text x="67"  y="112" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b6a64">1.2k</text>
+              <text x="125" y="90"  text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b6a64">2.0k</text>
+              <text x="183" y="58"  text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#6b6a64">3.3k</text>
+              <text x="241" y="28"  text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#1B365D">4.6k</text>
+              <!-- x labels -->
+              <text x="67"  y="164" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#6b6a64">Q1</text>
+              <text x="125" y="164" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#6b6a64">Q2</text>
+              <text x="183" y="164" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#6b6a64">Q3</text>
+              <text x="241" y="164" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#6b6a64">Q4</text>
+            </svg>
+            <div class="vlist">
+              <div class="vi"><b>4.6k</b><span>Q4 の月間処理ドキュメント</span></div>
+              <div class="vi"><b>+283%</b><span>年間の伸び</span></div>
+              <div class="vi"><b>0</b><span>追加した手作業の運用ルール</span></div>
+            </div>
+          </div>
+          <p class="foot-mark">Kasane</p>
+          <p class="page-num">03</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A4 2x2 modules (visual: none) -->
+  <div class="sample">
+    <div class="sample-meta">
+      <span class="kind">A4 · 機能紹介（2×2モジュール）</span>
+      <span class="tags"><span class="tag">SLIDE 16:9</span><span class="tag alt">ビジュアルなし</span></span>
+    </div>
+    <p class="sample-note">4つの機能を等間隔のモジュールで。番号マークだけ brand 色、本文は olive で静かに。</p>
+    <div class="preview slide-preview">
+      <div class="slide">
+        <div class="slide-inner">
+          <p class="eyebrow">Features · できること</p>
+          <h2>4つの動作で完結する。</h2>
+          <div class="t2x2">
+            <div class="mod"><p class="mt"><span class="ml">01</span>自動で束ねる</p><p class="mb">関連する文書を横断で集め、重複と最新版を判定して一本の流れにまとめる。</p></div>
+            <div class="mod"><p class="mt"><span class="ml">02</span>差分を先頭に</p><p class="mb">前回から変わった点を要約してページ先頭へ。全文を読み直す必要がない。</p></div>
+            <div class="mod"><p class="mt"><span class="ml">03</span>引用をたどる</p><p class="mb">要約の各文に出典リンク。根拠の原文へワンクリックで戻れる。</p></div>
+            <div class="mod"><p class="mt"><span class="ml">04</span>そのまま書き出す</p><p class="mb">束ねた結果を PDF・スライド・議事録テンプレートへ即座にエクスポート。</p></div>
+          </div>
+          <p class="foot-mark">Kasane</p>
+          <p class="page-num">04</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- DOCUMENTS                                                    -->
+  <!-- ============================================================ -->
+  <p class="group-title" id="docs">B · ドキュメント的に使う（A4）</p>
+  <p class="group-desc">印刷・PDF 配布向けの A4。情報密度を上げつつ、見出しの brand 罫・余白・行間で読みやすさを保ちます。スライドと同じ書体・同じ色で、地続きの見た目になります。</p>
+
+  <div class="doc-grid">
+
+    <!-- B1 One-pager (visual: none) -->
+    <div class="sample">
+      <div class="sample-meta">
+        <span class="kind">B1 · 一枚もの概要</span>
+        <span class="tags"><span class="tag">DOC A4</span><span class="tag alt">ビジュアルなし</span></span>
+      </div>
+      <p class="sample-note">エグゼクティブサマリ。KPI 帯 + タイムラインで「全体像を1枚」。</p>
+      <div class="preview">
+        <div class="doc">
+          <div class="doc-inner">
+            <p class="eyebrow">One-Pager · エグゼクティブサマリ</p>
+            <h1>Kasane 事業概要</h1>
+            <p class="doc-sub">チーム向けドキュメント分析 SaaS — 2026年春期</p>
+            <p class="doc-meta">CONFIDENTIAL · 2026.03.18</p>
+
+            <div class="doc-metrics">
+              <div class="m"><div class="v">¥48M</div><div class="l">ARR</div></div>
+              <div class="m"><div class="v">120</div><div class="l">導入チーム</div></div>
+              <div class="m"><div class="v">68%</div><div class="l">探索時間削減</div></div>
+            </div>
+
+            <h2>何を解決するか</h2>
+            <p>社内のナレッジは <span class="hl">複数のツールに分散</span>し、最新版の判別と要点の把握に時間がかかる。Kasane は関連文書を自動で束ね、差分と要約を先頭に提示することで、会議を「確認」から「意思決定」へ移す。</p>
+
+            <h2>今期の重点</h2>
+            <ul>
+              <li>エンタープライズ向け権限管理の一般提供</li>
+              <li>主要チャットツールへの双方向連携</li>
+              <li>日本語要約モデルの精度を <span class="hl">+18pt</span> 改善</li>
+            </ul>
+
+            <h2>ロードマップ</h2>
+            <table>
+              <tr><th>四半期</th><th>マイルストーン</th><th class="num">指標</th></tr>
+              <tr><td>Q1</td><td>権限管理 GA</td><td class="num">120社</td></tr>
+              <tr><td>Q2</td><td>チャット連携</td><td class="num">200社</td></tr>
+              <tr><td>Q3</td><td>要約精度改善</td><td class="num">+18pt</td></tr>
+            </table>
+
+            <div class="doc-footer"><span>Kasane Inc.</span><span>1 / 1</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B2 Long-doc page (visual: none, text-heavy) -->
+    <div class="sample">
+      <div class="sample-meta">
+        <span class="kind">B2 · 長文ドキュメント</span>
+        <span class="tags"><span class="tag">DOC A4</span><span class="tag alt">ビジュアルなし</span></span>
+      </div>
+      <p class="sample-note">章見出し + 本文 + コールアウト。テキスト主体でも罫と余白でリズムを作る。</p>
+      <div class="preview">
+        <div class="doc">
+          <div class="doc-inner">
+            <p class="eyebrow">Chapter 02 · アーキテクチャ</p>
+            <h1>束ねる仕組み</h1>
+            <p class="lead">Kasane の中核は、文書を「集める・畳む・並べる」の3段で処理するパイプラインにある。各段は独立して差し替え可能で、組織ごとの運用に合わせて調整できる。</p>
+
+            <h2>2.1 収集レイヤー</h2>
+            <p>コネクタが各ソースから文書とメタデータを取得する。取得は増分同期を基本とし、変更があったものだけを後段へ渡す。これにより<span class="hl">大規模なナレッジベースでも数秒で最新化</span>される。</p>
+
+            <h2>2.2 畳み込み</h2>
+            <p>重複・派生・翻訳版を1つのクラスタにまとめ、正本を判定する。判定は更新時刻だけでなく参照関係も見るため、古いが正本という文書も取りこぼさない。</p>
+
+            <div class="callout">
+              <p class="cl-label">設計上の判断</p>
+              <p>要約は必ず原文への引用リンクを伴う。要約だけが独り歩きして<b>根拠を失う</b>状態を、構造的に防ぐためである。</p>
+            </div>
+
+            <h2>2.3 並べ替え</h2>
+            <p>読み手の役割に応じて並びを変える。レビュアーには差分を、新規参加者には背景を先頭に置く。同じ文書束でも、開く人によって最初の一画面が変わる。</p>
+
+            <div class="doc-footer"><span>Kasane · Architecture</span><span>14</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B3 Report with chart (visual: yes) -->
+    <div class="sample">
+      <div class="sample-meta">
+        <span class="kind">B3 · レポート（チャート + リスク）</span>
+        <span class="tags"><span class="tag">DOC A4</span><span class="tag">ビジュアルあり</span></span>
+      </div>
+      <p class="sample-note">本文にインライン SVG の折れ線を差し込み、下にリスクをグリッドで。数値レポートの典型。</p>
+      <div class="preview">
+        <div class="doc">
+          <div class="doc-inner">
+            <p class="eyebrow">Report · 四半期事業レビュー</p>
+            <h1>Q4 2026 レビュー</h1>
+            <p class="doc-meta">作成: 経営企画 · 2026.01.12</p>
+
+            <h2>継続課金の推移</h2>
+            <p>MRR は4四半期連続で増加。解約率は <span class="hl">1.8%</span> まで低下し、拡張収益が新規を上回った。</p>
+            <figure>
+              <svg viewBox="0 0 340 150" role="img" aria-label="MRR の四半期推移">
+                <line x1="30" y1="120" x2="330" y2="120" stroke="#e8e6dc" stroke-width="1"/>
+                <line x1="30" y1="86"  x2="330" y2="86"  stroke="#e8e6dc" stroke-width="0.5" stroke-dasharray="2 3"/>
+                <line x1="30" y1="52"  x2="330" y2="52"  stroke="#e8e6dc" stroke-width="0.5" stroke-dasharray="2 3"/>
+                <line x1="30" y1="20"  x2="330" y2="20"  stroke="#e8e6dc" stroke-width="0.5" stroke-dasharray="2 3"/>
+                <polyline points="48,104 118,82 188,58 258,30" fill="none" stroke="#1B365D" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+                <circle cx="48"  cy="104" r="3.2" fill="#1B365D"/>
+                <circle cx="118" cy="82"  r="3.2" fill="#1B365D"/>
+                <circle cx="188" cy="58"  r="3.2" fill="#1B365D"/>
+                <circle cx="258" cy="30"  r="3.2" fill="#1B365D"/>
+                <text x="48"  y="138" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b6a64">Q1</text>
+                <text x="118" y="138" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b6a64">Q2</text>
+                <text x="188" y="138" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b6a64">Q3</text>
+                <text x="258" y="138" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#6b6a64">Q4</text>
+                <text x="270" y="26" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#1B365D">¥4.0M</text>
+              </svg>
+              <figcaption>四半期 MRR（百万円）· 出典: 社内ダッシュボード</figcaption>
+            </figure>
+
+            <h2>主要リスク</h2>
+            <div class="risk-grid">
+              <div class="risk"><div class="rl">大口依存</div><div class="rd">上位3社で売上の34%。1社離脱で着地が±8%振れる。</div></div>
+              <div class="risk"><div class="rl">連携の保守</div><div class="rd">外部API仕様変更に追従コスト。専任1名で担保。</div></div>
+              <div class="risk"><div class="rl">採用</div><div class="rd">日本語MLエンジニアの確保が拡大の律速。</div></div>
+              <div class="risk"><div class="rl">競合</div><div class="rd">大手の隣接機能。差分要約の品質で優位を維持。</div></div>
+            </div>
+
+            <div class="doc-footer"><span>Kasane · Q4 Review</span><span>3</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B4 Data table (visual: none, table only) -->
+    <div class="sample">
+      <div class="sample-meta">
+        <span class="kind">B4 · 比較表 / 料金表</span>
+        <span class="tags"><span class="tag">DOC A4</span><span class="tag alt">ビジュアルなし</span></span>
+      </div>
+      <p class="sample-note">表だけで読ませるページ。financial / striped 風の罫と tabular-nums で数字を揃える。</p>
+      <div class="preview">
+        <div class="doc">
+          <div class="doc-inner">
+            <p class="eyebrow">Pricing · プラン比較</p>
+            <h1>料金プラン</h1>
+            <p>チーム規模と必要な連携数で選ぶ3プラン。<span class="tag">年契約で2ヶ月分無料</span></p>
+
+            <table>
+              <tr><th>項目</th><th class="num">Starter</th><th class="num">Team</th><th class="num">Enterprise</th></tr>
+              <tr><td>月額（1席）</td><td class="num">¥1,200</td><td class="num">¥2,800</td><td class="num">応相談</td></tr>
+              <tr><td>最小席数</td><td class="num">3</td><td class="num">10</td><td class="num">50</td></tr>
+              <tr><td>連携コネクタ</td><td class="num">3</td><td class="num">12</td><td class="num">無制限</td></tr>
+              <tr><td>月間処理文書</td><td class="num">2,000</td><td class="num">20,000</td><td class="num">無制限</td></tr>
+              <tr><td>権限管理</td><td class="num">—</td><td class="num">標準</td><td class="num">SAML/SCIM</td></tr>
+              <tr><td>サポート</td><td class="num">メール</td><td class="num">優先</td><td class="num">専任</td></tr>
+              <tr class="total"><td>想定月額（標準構成）</td><td class="num">¥3.6k</td><td class="num">¥28k</td><td class="num">¥120k〜</td></tr>
+            </table>
+
+            <h3>備考</h3>
+            <p>すべてのプランで日本語・英語の要約に対応。Enterprise はオンプレミス配備と監査ログのエクスポートを含む。</p>
+
+            <div class="doc-footer"><span>Kasane · Pricing 2026</span><span>1 / 1</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /doc-grid -->
+
+  <footer class="foot">
+    <span>Kami · 紙 — 組版サンプル集（架空プロダクト Kasane を題材にしたデモ）</span>
+    <a href="./index.html">デザインシステムへ →</a>
+  </footer>
+
+</main>
+</body>
+</html>
