@@ -29,6 +29,16 @@ Think in English, interact with the user in Japanese.
 | 特定のシンボルを編集したい   | Serena (`replace_symbol_body`)                 |
 | 参照箇所を調べたい           | Serena (`find_referencing_symbols`)            |
 
+## 公式ドキュメントを一次情報にする
+
+ライブラリ・フレームワーク・CLI・クラウドサービスを扱うときは、事前学習の記憶ではなく **公式ドキュメントを WebSearch / WebFetch で取得して確認する**。専用スキルは持たない（ドキュメントで足りるものはスキル化しない方針）。
+
+- **必ず確認するケース**: API シグネチャ、CLI のフラグ・サブコマンド、設定ファイルのスキーマ、バージョン依存の挙動、料金・制限値、非推奨化の有無
+- **参照先の優先順位**: 公式 docs / リポジトリの README・CHANGELOG > 公式ブログ > それ以外。二次情報（Qiita、ブログ、Stack Overflow）は手がかりに留め、最終確認は一次情報で行う
+- **代表的な参照先**: Cloudflare (developers.cloudflare.com)、Vercel / Next.js (vercel.com/docs, nextjs.org/docs)、Playwright (playwright.dev)、dotenvx (dotenvx.com)、GitHub CLI (cli.github.com/manual)、Google Cloud (cloud.google.com/docs)
+- バージョンが問題になる場合は、まず手元の lockfile / `--version` で実際のバージョンを確認してから、そのバージョンに対応するドキュメントを読む
+- ネットワークが使えない環境では、記憶ベースであることと検証未実施であることを明記する
+
 ## Skill と Subagent を積極活用する
 
 ### スキルの参照
