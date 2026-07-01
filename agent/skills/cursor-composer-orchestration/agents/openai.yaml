@@ -1,4 +1,0 @@
-interface:
-  display_name: "Cursor Composer Orchestration"
-  short_description: "思考は司令塔、作業はCursorへ分担する"
-  default_prompt: "司令塔エージェントとsubagentで思考・分解・レビューを行い、Cursor Composerへ緻密に定義した実装作業だけをAppleScript経由で委譲してください。"

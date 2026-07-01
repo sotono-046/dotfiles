@@ -1,4 +1,0 @@
-interface:
-  display_name: "wtp (Worktree Plus)"
-  short_description: "Git worktree CLI の利用と wtp 開発"
-  default_prompt: "wtp (Worktree Plus) で worktree を作成・管理するか、satococoa/wtp リポジトリの開発・PR 対応を進めてください。"
