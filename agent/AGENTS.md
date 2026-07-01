@@ -21,15 +21,6 @@ Think in English, interact with the user in Japanese.
 - `insert_before_symbol` / `insert_after_symbol`: 新しいコードの挿入
 - `search_for_pattern`: 柔軟なパターン検索
 
-### Context7（ドキュメント参照）
-
-ライブラリやフレームワークを扱うときは、最新ドキュメントを把握するため Context7 を使用する。ツール名は環境により表記揺れがある（Claude では `resolve-library-id` / `query-docs`、Codex では `resolve_library_id` / `query_docs` など）。各環境に公開されている相当ツールを使う。
-
-1. Resolve Library ID 相当: ライブラリ名から Context7 ID を解決
-2. Query Docs 相当: 解決した ID でドキュメントを検索
-
-用途: 新しいライブラリの使い方を調べる / API の正確な仕様を確認する / 最新のベストプラクティスを参照する
-
 ### 判断基準
 
 | 状況                         | 使用するツール                                 |
@@ -37,8 +28,6 @@ Think in English, interact with the user in Japanese.
 | コードの構造を理解したい     | Serena (`get_symbols_overview`, `find_symbol`) |
 | 特定のシンボルを編集したい   | Serena (`replace_symbol_body`)                 |
 | 参照箇所を調べたい           | Serena (`find_referencing_symbols`)            |
-| ライブラリの使い方を調べたい | Context7                                       |
-| 最新の API 仕様を確認したい  | Context7                                       |
 
 ## Skill と Subagent を積極活用する
 
@@ -48,11 +37,10 @@ Think in English, interact with the user in Japanese.
 
 ### 重要なスキル
 
-1. `git-ops`: commit / PR 作成 / worktree 分離など、履歴やリモート状態に影響する Git 操作では必ず参照する（`git status` / `git diff` などの読み取りのみの場合は不要）
+1. `git-ops`: commit / PR 作成など、履歴やリモート状態に影響する Git 操作では必ず参照する（`git status` / `git diff` などの読み取りのみの場合は不要）
 2. `task-orchestration`: 独立性が高く成果物が重複しないサブタスクに限り並列化する。条件を満たせばサブエージェントを多数（10〜20 個規模でも）同時起動してよいが、過剰起動・重複作業・コスト増を避けるため必要最小限の数にとどめる
 3. `agent-note-writing`: Obsidian 保存、SOW、Issue 下書き、調査メモ、運用ルールなど後で再利用するドキュメントを書くときは必ず参照する。`保存して`、`メモして`、`記録して`、`SOW作って`、`Issue下書き`、`ドキュメント化` で使用し、repo 作業では project / repository / branch を frontmatter と本文に明記する。外部 Issue/PR/共有 Doc の作成は明示指示があるまで下書き、または該当 Skill/tool への引き継ぎで止める
-4. `cursor-composer-orchestration`: Cursor を実装役として使える環境では積極的に参照する。思考・設計・分解・レビューは現在動いている司令塔エージェント（Codex / Claude / その subagent）が担い、Cursor には緻密に定義した bounded code edit のみを `cursor-agent` CLI 経由で委譲する（IDE 連携が不安定だったため AppleScript ではなく CLI を使う）。Cursor に広い設計判断、Git 操作、スコープ未定義の作業を丸投げしない
-5. `fairy-tale`: 以下のいずれかに当てはまるタスクでは、作業開始前に `fairy-tale` スキルを読み、Glass Slipper Gate（予算: 最大サブタスク数 / ファイル数 / web 検索数 / tool call 数 / 経過時間）と Implementation Validation Gate（focused check + 隣接互換チェック + validation ledger）を適用する。description マッチを待たず、条件に該当した時点で能動的にロードする。
+4. `fairy-tale`: 以下のいずれかに当てはまるタスクでは、作業開始前に `fairy-tale` スキルを読み、Glass Slipper Gate（予算: 最大サブタスク数 / ファイル数 / web 検索数 / tool call 数 / 経過時間）と Implementation Validation Gate（focused check + 隣接互換チェック + validation ledger）を適用する。description マッチを待たず、条件に該当した時点で能動的にロードする。
    - 長時間コーディング / コードベース横断のリファクタリング・移行（Fable Harness）
    - 多エージェント fan-out、長い autonomous run、context resume を伴う作業
    - 防御目的のセキュリティレビュー（Mythos / Cyber Frontier Defense Harness、OWASP LLM 含む）

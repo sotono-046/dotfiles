@@ -144,7 +144,7 @@ git diff $LOOP_START_HEAD..HEAD --stat
 
 - 各グループが意図通り1コミットになっているか。
 - 担当外ファイルへの越境変更が混ざっていないか。
-- 機械的な型・リント・テスト検証が必要なら `quality-gainner` / `green-loop` skill に委譲してよい。
+- 機械的な型・リント・テスト検証が必要なら `quality-gainner` subagent に委譲してよい。
 
 確認できたら**フェーズ1へ戻り、再度 `/code-review` をかける**（ループ周回）。
 
