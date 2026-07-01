@@ -17,7 +17,6 @@
       "Bash(gh issue:*)",
       "Bash(mkdir -p:*)",
       "Bash(wc:*)",
-      "Bash(wtp:*)",
       "Bash(pnpm:*)",
       "Bash(npm:*)",
       "Bash(bun:*)",
@@ -32,7 +31,6 @@
       "mcp__serena",
       "mcp__playwright",
       "mcp__codex",
-      "mcp__context7",
       "Write(//Users/sotono/Documents/**)",
       "Edit(//Users/sotono/Documents/**)",
       "Bash(coderabbit:*)",
@@ -142,7 +140,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "claude-opus-4-7[1m]",
+  "model": "opus[1m]",
   "enabledMcpjsonServers": [
     "playwright"
   ],
@@ -204,6 +202,14 @@
     "vercel@claude-plugins-official": true,
     "fairy-tale@fairy-tale-marketplace": true
   },
+  "extraKnownMarketplaces": {
+    "fairy-tale-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "bonginkan/fairy_tale"
+      }
+    }
+  },
   "language": "Japanese",
   "alwaysThinkingEnabled": false,
   "effortLevel": "medium",
@@ -214,13 +220,5 @@
   "teammateMode": "in-process",
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true,
-  "extraKnownMarketplaces": {
-    "fairy-tale-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "bonginkan/fairy_tale"
-      }
-    }
-  }
+  "skipAutoPermissionPrompt": true
 }
