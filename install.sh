@@ -101,6 +101,7 @@ dotfiles=(
   "agent/settings.json:$HOME/.claude/settings.json"
   "agent/skills:$HOME/.claude/skills"
   "agent/skills:$HOME/.codex/skills"
+  "agent/hooks:$HOME/.claude/hooks"
 )
 
 # 既存ファイルの削除とシンボリックリンクの作成
