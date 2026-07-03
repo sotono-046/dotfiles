@@ -2,7 +2,10 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "CLAUDE_CODE_NO_FLICKER": "1"
+    "CLAUDE_CODE_NO_FLICKER": "1",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-fable-5[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5[1m]",
+    "ANTHROPIC_MODEL": "opusplan"
   },
   "permissions": {
     "allow": [
@@ -29,7 +32,6 @@
       "Bash(curl:*)",
       "Bash(ls:*)",
       "mcp__serena",
-      "mcp__playwright",
       "mcp__codex",
       "Write(//Users/sotono/Documents/**)",
       "Edit(//Users/sotono/Documents/**)",
@@ -99,8 +101,6 @@
       "Bash(cargo search:*)",
       "Bash(bun -e:*)",
       "Bash(dotenvx run:*)",
-      "Bash(GOOGLE_APPLICATION_CREDENTIALS=\"\" dotenvx run -- npx tsx scripts/dry-run-session-evaluation.ts session_aac62d01c010d8d54c51a95c CG0p7sEQlyW2kUOI1vPE)",
-      "Bash(GOOGLE_APPLICATION_CREDENTIALS=\"\" GCLOUD_PROJECT=yuyu-456110 GOOGLE_CLOUD_PROJECT=yuyu-456110 dotenvx run:*)",
       "Bash(gsutil ls:*)",
       "Bash(python3:*)",
       "Bash(dotenvx set:*)",
@@ -140,10 +140,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opus[1m]",
-  "enabledMcpjsonServers": [
-    "playwright"
-  ],
+  "model": "sonnet",
   "hooks": {
     "Notification": [
       {
