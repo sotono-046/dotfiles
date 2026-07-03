@@ -101,7 +101,6 @@ dotfiles=(
   "agent/settings.json:$HOME/.claude/settings.json"
   "agent/skills:$HOME/.claude/skills"
   "agent/skills:$HOME/.codex/skills"
-  "agent/statusline-command.sh:$HOME/.claude/statusline-command.sh"
 )
 
 # 既存ファイルの削除とシンボリックリンクの作成
