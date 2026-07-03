@@ -5,6 +5,9 @@
 set -u
 PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin
 
+# 7日以上前の残留スレッドファイルを掃除する（SessionEnd が発火しなかった分の蓄積対策）
+find "$HOME/.claude/session-threads" -type f -mtime +7 -delete 2>/dev/null
+
 INPUT=$(cat)
 SOURCE=$(printf '%s' "$INPUT" | jq -r '.source // "startup"')
 SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // empty')
@@ -69,6 +72,7 @@ if [[ -n "$MSG_ID" ]]; then
     '{project:$project, channel:$channel, name:$name, message_id:$msg}')" 2>/dev/null)
   THREAD_ID=$(printf '%s' "$THREAD" | jq -r '.id // empty' 2>/dev/null)
   if [[ -n "$THREAD_ID" && -n "$SESSION_ID" ]]; then
+    mkdir -p "$HOME/.claude/session-threads"
     printf '%s' "$THREAD_ID" > "$HOME/.claude/session-threads/$SESSION_ID"
   fi
 fi
