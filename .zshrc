@@ -71,3 +71,10 @@ unset _zshrc_part
 
 # Added by Devin
 export PATH="$HOME/.codeium/windsurf/bin:$PATH"
+
+# discord-ops MCP のトークンを読み込む（~/.discord-ops-env は git 管理外・600権限）
+if [[ -f "$HOME/.discord-ops-env" ]]; then
+  set -a
+  source "$HOME/.discord-ops-env"
+  set +a
+fi
