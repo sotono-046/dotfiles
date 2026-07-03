@@ -2,6 +2,7 @@
 set -ue
 
 OS="$(uname -s)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Homebrewのインストール (macOS / Linux)
 if ! command -v brew &>/dev/null; then
@@ -108,8 +109,12 @@ dotfiles=(
 for dotfile in "${dotfiles[@]}"; do
   src="${dotfile%%:*}"
   dest="${dotfile##*:}"
+  # symlink 以外の既存物（実ファイル・実ディレクトリ）は上書き前に退避する
+  if [ -e "$dest" ] && [ ! -L "$dest" ]; then
+    mv "$dest" "$dest.dotbackup"
+  fi
   rm -rf "$dest"
-  ln -s "$(pwd)/$src" "$dest"
+  ln -s "$SCRIPT_DIR/$src" "$dest"
 done
 
 
