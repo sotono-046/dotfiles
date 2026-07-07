@@ -46,7 +46,7 @@
 
 ## `./hooks`
 
-`~/.claude/hooks` に配信される SessionStart/SessionEnd hook。Discord にスレッドを作成・終了通知する。トークンは `~/.discord-ops-env`（git 管理外・600 権限）から環境変数として読み込む。secret はスクリプト本体には含まれない。
+`~/.claude/hooks` に配信される SessionStart/SessionEnd/Stop/Notification hook 群。Discord にスレッドを作成し、セッション開始・終了通知に加えてターン毎の応答抜粋・権限待ち通知を投稿し、tmux 内であれば Discord への返信をプロンプトとして注入する（双方向連携）。トークンは `~/.discord-ops-env`（git 管理外・600 権限）から環境変数として読み込む。secret はスクリプト本体には含まれない。別マシンへの導入手順は `agent/docs/discord-bridge-setup.md` を参照。
 
 ## `./settings.json`
 

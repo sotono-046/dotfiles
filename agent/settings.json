@@ -148,6 +148,11 @@
           {
             "type": "command",
             "command": "afplay /System/Library/Sounds/Pop.aiff"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/notification-discord.sh",
+            "timeout": 30
           }
         ]
       }
@@ -159,6 +164,11 @@
           {
             "type": "command",
             "command": "afplay /System/Library/Sounds/Hero.aiff"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/stop-discord.sh",
+            "timeout": 30
           }
         ]
       }
@@ -169,7 +179,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/sotono/.claude/hooks/session-start-discord.sh"
+            "command": "$HOME/.claude/hooks/session-start-discord.sh"
           }
         ]
       }
@@ -180,7 +190,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/sotono/.claude/hooks/session-end-discord.sh"
+            "command": "$HOME/.claude/hooks/session-end-discord.sh"
           }
         ]
       }
