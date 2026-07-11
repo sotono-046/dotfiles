@@ -8,11 +8,15 @@
 # Optional parameters:
 # @raycast.icon 💾
 # @raycast.packageName Disk Utilities
-# @raycast.description 指定した外付けHDDを安全に取り外します
+# @raycast.description Eagleを終了してから指定した外付けHDDを安全に取り外します
 
 # Finder に表示される外付けHDDのボリューム名。
 VOLUME_NAME="home"
 VOLUME_PATH="/Volumes/$VOLUME_NAME"
+KEEPALIVE_PLIST="$HOME/Library/LaunchAgents/dev.sotono.hdd-keepalive.plist"
+EJECT_LOCK="/tmp/dev.sotono.hdd-ejecting"
+EAGLE_PROCESS_NAME="Eagle"
+EAGLE_QUIT_TIMEOUT_SECONDS=10
 
 if [ ! -d "$VOLUME_PATH" ]; then
   echo "$VOLUME_NAME は接続されていません"
@@ -66,9 +70,43 @@ if [ "$INTERNAL" = "true" ] || [ "$EJECTABLE" != "true" ]; then
   exit 1
 fi
 
+# Eagle が home 内のファイルを保持するため、通常終了を待ってから取り外す。
+if pgrep -x "$EAGLE_PROCESS_NAME" >/dev/null 2>&1; then
+  echo "Eagleを終了しています..."
+  if ! osascript -e 'tell application "Eagle" to quit'; then
+    echo "Eagleを終了できませんでした"
+    exit 1
+  fi
+
+  for ((attempt = 1; attempt <= EAGLE_QUIT_TIMEOUT_SECONDS; attempt++)); do
+    if ! pgrep -x "$EAGLE_PROCESS_NAME" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+  done
+
+  if pgrep -x "$EAGLE_PROCESS_NAME" >/dev/null 2>&1; then
+    echo "Eagleが終了しなかったため、取り外しを中止しました"
+    exit 1
+  fi
+fi
+
+# KeepAlive が対象ボリュームを読んでいるため、取り外す間だけ停止する。
+# 未登録の場合も安全な取り外しを試みるため、bootout の失敗は無視する。
+if ! touch "$EJECT_LOCK"; then
+  echo "取り外しロックを作成できませんでした"
+  exit 1
+fi
+trap 'rm -f "$EJECT_LOCK"' EXIT
+launchctl bootout "gui/$(id -u)" "$KEEPALIVE_PLIST" >/dev/null 2>&1 || true
 if diskutil eject "/dev/$DISK_ID" >/dev/null; then
   echo "$VOLUME_NAME を安全に取り外しました"
 else
+  # 取り外しに失敗してまだマウントされている場合だけ KeepAlive を再開する。
+  if [ -d "$VOLUME_PATH" ]; then
+    launchctl bootstrap "gui/$(id -u)" "$KEEPALIVE_PLIST" >/dev/null 2>&1 ||
+      echo "$VOLUME_NAME のKeepAliveを再開できませんでした" >&2
+  fi
   echo "取り外しに失敗しました。使用中のアプリを閉じてください"
   exit 1
 fi
