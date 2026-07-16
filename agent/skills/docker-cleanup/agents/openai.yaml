@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docker Cleanup"
+  short_description: "Safely inspect and reclaim unused Docker Desktop data"
+  default_prompt: "Use $docker-cleanup to inspect and safely reclaim unused Docker data on this Mac."
