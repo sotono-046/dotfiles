@@ -32,9 +32,10 @@ fix(api): resolve token expiry issue
 - 長文の body は `.temp/YYMMDD/PR/YYMMDD-PR-<タイトル>.md` に書いてから `gh pr create --body-file` で使用する
 - 作成後にレビュー指摘が入ったら `ci-merge-watch` を併用する
 
-### MISA レビュー停滞時の代替レビュー
+### MISA 指摘と独立レビュー
 
-- MISA レビューが長時間進まない場合は待ち続けず、別タスクの Codex を独立レビュアーとして起動する。Subagent 機能が使える場合はそれを優先し、使えない場合は `codex exec review` を使う
+- MISA のステータスやラベル変化は待たない。`review:pending` または `review:blocker` が付いていても、レビューコメントやスレッドに具体的な指摘がなければレビュー入力としては無視する
+- PR がレビュー段階に入ったら、待機やポーリングを挟まず、別タスクの Codex に同じ head SHA を独立レビューさせる。Subagent 機能が使える場合はそれを優先し、使えない場合は `codex exec review` を使う
 - レビューモデルは固定しない。起動時に OpenAI 公式の [Codex Models](https://learn.chatgpt.com/docs/models.md) と実行環境の利用可能モデルを確認し、複雑なコードレビューに適した最新の Sol 系モデルを選ぶ（現行例: `gpt-5.6-sol`）。ユーザーが「5.6 Sol」などと指定した場合も、そのバージョンに固定する明示指示がなければ、その時点の最新 Sol 系モデルを使う
 - 対象 PR、head SHA、base branch、レビュー観点を渡し、作業ツリーを変更させない読み取り専用レビューとする。CLI では次の形を使う
 
@@ -45,7 +46,8 @@ codex exec -C "$TARGET_REPO" review \
   "PRと現在の head SHA を確認し、重大度順にコードレビューしてください。編集はしないでください。"
 ```
 
-- 代替レビューで重大指摘がなく、必要な CI も通った場合は、MISA レビューと同等の確認結果として扱い、`ci-merge-watch` の後続を進める
+- 独立レビューで重大指摘がなく、必要な CI も通った場合は、MISA ラベルの変化を待たずに `ci-merge-watch` の後続を進める
+- MISA から現在の head に対する具体的な指摘が実際に届いた場合は無視しない。指摘の根拠と適用可否を確認し、必要な修正と検証を行い、最新 head を再レビューしてからコメントを解決する
 
 ### PR テンプレート
 
