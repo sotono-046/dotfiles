@@ -3,6 +3,8 @@
 
 export REPOHIST_FILE="$HOME/.repo_history"
 export WORK_DIR="$HOME/Documents/_work"
+export REPO_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/repo-selector"
+export REPO_CACHE_TTL="${REPO_CACHE_TTL:-300}"
 
 # 指定リポジトリの worktree 一覧を「ブランチ名<TAB>パス」形式で出力する内部関数
 _git_worktree_choices() {
@@ -36,15 +38,18 @@ _git_worktree_choices() {
         '
 }
 
-# WORK_DIR 配下の Git リポジトリ候補を「表示名<TAB>絶対パス」形式で出力する内部関数
-# ~/dotfiles は WORK_DIR 外でも常に候補に含める
-_repo_choices() {
+# WORK_DIR 配下を走査し、Git リポジトリ候補を「表示名<TAB>絶対パス」形式で出力する内部関数
+_scan_repo_choices() {
     local work_dir="${1:-$WORK_DIR}"
 
     {
         find "$work_dir" \
-            -type d \( -name "node_modules" -o -name ".cache" -o -name "Library" -o -name ".Trash" -o -name "venv" -o -name ".venv" \) -prune -o \
-            -name ".git" -type d -print 2>/dev/null |
+            -type d \( \
+                -name "node_modules" -o -name ".cache" -o -name ".next" -o -name ".turbo" -o \
+                -name "dist" -o -name "coverage" -o -name "target" -o \
+                -name "Library" -o -name ".Trash" -o -name "venv" -o -name ".venv" \
+            \) -prune -o \
+            -name ".git" -type d -print -prune 2>/dev/null |
             sed 's|/.git||' |
             awk -v prefix="$work_dir/" '{
                 label = $0
@@ -60,14 +65,82 @@ _repo_choices() {
     } | awk -F '\t' '!seen[$2]++'
 }
 
+# 作業ディレクトリごとに衝突しないキャッシュファイル名を返す内部関数
+_repo_cache_file() {
+    local work_dir="${1:-$WORK_DIR}"
+    local cache_key
+    cache_key=$(printf '%s' "$work_dir" | cksum | awk '{print $1}')
+    printf '%s/repos-%s.tsv\n' "$REPO_CACHE_DIR" "$cache_key"
+}
+
+# キャッシュが TTL 内なら成功を返す内部関数
+_repo_cache_is_fresh() {
+    local cache_file="$1"
+    [[ -f "$cache_file" ]] || return 1
+
+    local modified_at
+    modified_at=$(stat -f '%m' "$cache_file" 2>/dev/null) || return 1
+    (( $(date +%s) - modified_at < REPO_CACHE_TTL ))
+}
+
+# Git リポジトリ候補をキャッシュ経由で出力する内部関数
+# 第2引数が refresh の場合はキャッシュを使わず再走査する
+_repo_choices() {
+    local work_dir="${1:-$WORK_DIR}"
+    local refresh="${2:-}"
+    local cache_file
+    cache_file=$(_repo_cache_file "$work_dir") || return 1
+
+    if [[ "$refresh" != "refresh" ]] && _repo_cache_is_fresh "$cache_file"; then
+        command cat "$cache_file"
+        return
+    fi
+
+    mkdir -p "$REPO_CACHE_DIR" || return 1
+    local cache_tmp="${cache_file}.tmp.$$"
+    if _scan_repo_choices "$work_dir" > "$cache_tmp"; then
+        mv "$cache_tmp" "$cache_file" || return 1
+        command cat "$cache_file"
+    else
+        rm -f "$cache_tmp"
+        return 1
+    fi
+}
+
 # fzf でリポジトリを選び、worktree が複数あればブランチも選択してパスを返す
-# usage: selected_path=$(_select_repo_or_worktree [work_dir])
+# query が1件だけに一致した場合は、最初の fzf を省略する
+# usage: selected_path=$(_select_repo_or_worktree [work_dir] [query] [refresh])
 _select_repo_or_worktree() {
     local work_dir="${1:-$WORK_DIR}"
+    local query="${2:-}"
+    local refresh="${3:-}"
 
     # 第1段階: メインリポジトリを選択
-    local selected_repo=$(_repo_choices "$work_dir" |
-        fzf --header 'Select Git repository' --with-nth=1 --delimiter=$'\t')
+    local repo_choices
+    repo_choices=$(_repo_choices "$work_dir" "$refresh") || return 1
+
+    if [[ -n "$query" ]]; then
+        repo_choices=$(printf '%s\n' "$repo_choices" |
+            awk -v query="$query" 'index(tolower($0), tolower(query))')
+    fi
+
+    local repo_count
+    repo_count=$(printf '%s\n' "$repo_choices" | sed '/^$/d' | wc -l | tr -d ' ')
+
+    local selected_repo
+    if (( repo_count == 0 )); then
+        if [[ -n "$query" ]]; then
+            echo "一致するリポジトリがありません: $query" >&2
+        else
+            echo "リポジトリが見つかりません: $work_dir" >&2
+        fi
+        return 1
+    elif (( repo_count == 1 )); then
+        selected_repo="$repo_choices"
+    else
+        selected_repo=$(printf '%s\n' "$repo_choices" |
+            fzf --header 'Select Git repository' --with-nth=1 --delimiter=$'\t')
+    fi
 
     if [[ -z "$selected_repo" ]]; then
         return 1
@@ -103,10 +176,32 @@ _select_repo_or_worktree() {
 }
 
 # fzf でリポジトリを選んで cd する
-# usage: repo [work_dir]
+# usage: repo [--refresh] [work_dir] [query]
+# --refresh は work_dir の直後でも指定できる
+# example: repo dot
 repo() {
-    local work_dir="${1:-$WORK_DIR}"
-    local selected_path=$(_select_repo_or_worktree "$work_dir")
+    local work_dir="$WORK_DIR"
+    local refresh=""
+
+    if [[ "${1:-}" == "--refresh" ]]; then
+        refresh="refresh"
+        shift
+    fi
+
+    # 既存の repo /path/to/work-dir 形式も維持する
+    if [[ -n "${1:-}" && -d "$1" ]]; then
+        work_dir="$1"
+        shift
+    fi
+
+    if [[ "${1:-}" == "--refresh" ]]; then
+        refresh="refresh"
+        shift
+    fi
+
+    local query="$*"
+    local selected_path
+    selected_path=$(_select_repo_or_worktree "$work_dir" "$query" "$refresh") || return 1
 
     if [[ -n "$selected_path" ]]; then
         cd "$selected_path"

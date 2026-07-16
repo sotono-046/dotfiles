@@ -62,8 +62,8 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # Added by Antigravity
 export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 
-# リポジトリ選択 / tmux IDE 起動コマンドは zsh/ 配下に分割
-for _zshrc_part in "$HOME/dotfiles/zsh/repo.zsh" "$HOME/dotfiles/zsh/tmux.zsh"; do
+# 作業ディレクトリ / リポジトリ / tmux IDE コマンドは zsh/ 配下に分割
+for _zshrc_part in "$HOME/dotfiles/zsh/repo.zsh" "$HOME/dotfiles/zsh/new.zsh" "$HOME/dotfiles/zsh/tmux.zsh"; do
     [[ -f "$_zshrc_part" ]] && source "$_zshrc_part"
 done
 unset _zshrc_part
