@@ -17,6 +17,8 @@ KEEPALIVE_PLIST="$HOME/Library/LaunchAgents/dev.sotono.hdd-keepalive.plist"
 EJECT_LOCK="/tmp/dev.sotono.hdd-ejecting"
 EAGLE_PROCESS_NAME="Eagle"
 EAGLE_QUIT_TIMEOUT_SECONDS=10
+EJECT_ATTEMPTS=3
+EJECT_RETRY_DELAY_SECONDS=2
 
 if [ ! -d "$VOLUME_PATH" ]; then
   echo "$VOLUME_NAME は接続されていません"
@@ -99,14 +101,26 @@ if ! touch "$EJECT_LOCK"; then
 fi
 trap 'rm -f "$EJECT_LOCK"' EXIT
 launchctl bootout "gui/$(id -u)" "$KEEPALIVE_PLIST" >/dev/null 2>&1 || true
-if diskutil eject "/dev/$DISK_ID" >/dev/null; then
-  echo "$VOLUME_NAME を安全に取り外しました"
-else
-  # 取り外しに失敗してまだマウントされている場合だけ KeepAlive を再開する。
-  if [ -d "$VOLUME_PATH" ]; then
-    launchctl bootstrap "gui/$(id -u)" "$KEEPALIVE_PLIST" >/dev/null 2>&1 ||
-      echo "$VOLUME_NAME のKeepAliveを再開できませんでした" >&2
+
+# Eagle 終了直後はファイルハンドルの解放が反映されるまで少し時間がかかることがある。
+# 最終失敗時だけエラーを表示し、KeepAlive を再開する。
+for ((attempt = 1; attempt <= EJECT_ATTEMPTS; attempt++)); do
+  if EJECT_OUTPUT=$(diskutil eject "/dev/$DISK_ID" 2>&1); then
+    echo "$VOLUME_NAME を安全に取り外しました"
+    exit 0
   fi
-  echo "取り外しに失敗しました。使用中のアプリを閉じてください"
-  exit 1
+
+  if [ "$attempt" -lt "$EJECT_ATTEMPTS" ]; then
+    sleep "$EJECT_RETRY_DELAY_SECONDS"
+  fi
+done
+
+printf '%s\n' "$EJECT_OUTPUT" >&2
+
+# 取り外しに失敗してまだマウントされている場合だけ KeepAlive を再開する。
+if [ -d "$VOLUME_PATH" ]; then
+  launchctl bootstrap "gui/$(id -u)" "$KEEPALIVE_PLIST" >/dev/null 2>&1 ||
+    echo "$VOLUME_NAME のKeepAliveを再開できませんでした" >&2
 fi
+echo "取り外しに失敗しました。使用中のアプリを閉じてください"
+exit 1
