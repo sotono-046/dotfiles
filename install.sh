@@ -82,6 +82,7 @@ fi
 mkdir -p ~/.config
 mkdir -p ~/.config/starship
 mkdir -p ~/.config/ccstatusline
+mkdir -p ~/.config/herdr
 mkdir -p ~/.claude
 mkdir -p ~/.codex
 mkdir -p ~/.gemini
@@ -92,6 +93,7 @@ dotfiles=(
   ".zshrc:$HOME/.zshrc"
   "starship.toml:$HOME/.config/starship.toml"
   ".tmux.conf:$HOME/.tmux.conf"
+  "herdr/config.toml:$HOME/.config/herdr/config.toml"
   "ccstatusline.json:$HOME/.config/ccstatusline/settings.json"
   "agent/CLAUDE.md:$HOME/.claude/CLAUDE.md"
   "agent/AGENTS.md:$HOME/.codex/AGENTS.md"

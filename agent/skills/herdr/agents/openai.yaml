@@ -1,0 +1,4 @@
+interface:
+  display_name: "Herdr"
+  short_description: "Herdr の pane 操作とエージェント間タスク送信"
+  default_prompt: "Use $herdr to send a task to another Herdr pane and submit it with Enter."

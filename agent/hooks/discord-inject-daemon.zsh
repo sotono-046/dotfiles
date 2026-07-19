@@ -18,7 +18,7 @@ source "$HOOK_DIR/discord-session-lib.zsh"
 discord_load_env || exit 0
 
 SESSION_ID="${1:?session_id required}"
-TMUX_SEND="$HOOK_DIR/../skills/tmux-agent-bridge/scripts/tmux-send.zsh"
+TMUX_SEND="$HOOK_DIR/tmux-send.zsh"
 
 SESSION_JSON=$(session_read "$SESSION_ID") || exit 0
 THREAD_ID=$(printf '%s' "$SESSION_JSON" | jq -r '.thread_id // empty')

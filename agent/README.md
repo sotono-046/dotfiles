@@ -42,7 +42,7 @@
 | `opus-codex-orchestration`  | Opus 司令塔 × Codex オペレーターの多重下請け開発（現在 `CLAUDE-agent.md` は退避中のため既定では不使用。詳細は同ファイル参照） |
 | `plan-digger`               | コード品質・セキュリティ・パフォーマンス検証・SOW 策定の本体      |
 | `task-orchestration`        | Task ツールでのサブエージェント並列運用                            |
-| `tmux-agent-bridge`         | tmux 別ペインのエージェントへの 2 段送信プロンプト                 |
+| `herdr`                     | Herdr の pane / agent 操作と本文 + Enter の task packet 送信       |
 
 ## `./hooks`
 

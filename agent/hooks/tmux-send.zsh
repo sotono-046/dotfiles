@@ -22,7 +22,8 @@
 
 set -euo pipefail
 
-usage() { sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; }
+script_path="${0:A}"
+usage() { sed -n '2,22p' "$script_path" | sed 's/^# \{0,1\}//'; }
 
 if (( $# < 1 )); then usage; exit 1; fi
 case "$1" in -h|--help) usage; exit 0;; esac
