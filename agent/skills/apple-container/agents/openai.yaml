@@ -1,0 +1,4 @@
+interface:
+  display_name: "Apple Container"
+  short_description: "Apple Containerを省容量かつ安全に運用する"
+  default_prompt: "Use $apple-container to inspect and operate Apple Container with strict disk-usage and data-safety guardrails."

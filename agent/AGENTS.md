@@ -58,6 +58,7 @@ Think in English, interact with the user in Japanese.
    - SWE-Bench Pro / ExploitBench などのベンチマーク再現・フィードバック適用
    - 同じ失敗が 3 回以上繰り返される、または validation ledger を作れないとき（Fairy Fusion 自動発火条件）
    - 小規模な単発タスク・対話・ドキュメント執筆のみの作業では適用しない（過剰になるため）
+5. `apple-container`: Apple の `container` CLI、`apple/container`、Apple Container の導入・起動・build/run・image/volume/machine・容量管理・Docker からの移行を扱うときは、作業開始前に必ず参照する。2 GiB の soft budget、`--rm`、volume の明示サイズ、破壊操作前の一覧化、`brew services` の再起動ループ防止を適用する。一般的なコンテナ概念や Docker のみの作業では使用しない。
 
 ### 使い分け
 
