@@ -34,3 +34,6 @@ copy_mode = "prefix+["
 mouse_capture = true
 copy_on_select = true
 pane_borders = true
+
+[ui.sound]
+enabled = false
