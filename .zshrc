@@ -78,3 +78,6 @@ if [[ -f "$HOME/.discord-ops-env" ]]; then
   source "$HOME/.discord-ops-env"
   set +a
 fi
+
+# Added by Antigravity IDE
+export PATH="/Users/sotono/.antigravity-ide/antigravity-ide/bin:$PATH"
