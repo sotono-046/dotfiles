@@ -9,3 +9,7 @@ claudecode/skills/frontend-design
 .serena/
 .temp/
 agent/skills/**/*.zip
+
+
+# APM dependencies
+apm_modules/
