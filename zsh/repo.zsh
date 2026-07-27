@@ -43,7 +43,9 @@ _scan_repo_choices() {
     local work_dir="${1:-$WORK_DIR}"
 
     {
-        find "$work_dir" \
+        # .git 自体を1階層として数え、リポジトリルートは最大4階層まで探索する。
+        # worktree 一覧は選択後に git worktree list から取得するため、この制限の影響を受けない。
+        find "$work_dir" -maxdepth 5 \
             -type d \( \
                 -name "node_modules" -o -name ".cache" -o -name ".next" -o -name ".turbo" -o \
                 -name "dist" -o -name "coverage" -o -name "target" -o \
