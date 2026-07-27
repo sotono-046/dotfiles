@@ -2,7 +2,7 @@
 # WORK_DIR 配下の .git を fzf で選び、cd や IDE / エージェント起動まで一気通貫で行う。
 
 export REPOHIST_FILE="$HOME/.repo_history"
-export WORK_DIR="$HOME/Documents/_work"
+export WORK_DIR="$HOME/Documents"
 export REPO_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/repo-selector"
 export REPO_CACHE_TTL="${REPO_CACHE_TTL:-300}"
 
