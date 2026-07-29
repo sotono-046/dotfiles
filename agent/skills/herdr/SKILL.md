@@ -1,6 +1,6 @@
 ---
 name: herdr
-description: Herdr の workspace / tab / pane / agent を CLI から確認・操作し、別ペインの Claude Code・Codex などへ指示を送って協調させる。ユーザーが Herdr を明示したとき、Herdr の別エージェントへ送る、ペインへタスクを投げる、agent 状態を待つ、pane 出力を読む、pane を split して agent を起動する、といった依頼で使用する。プロンプト送信は `herdr pane run` で本文と Enter を一度に送る。
+description: Herdr の workspace / tab / pane / agent を CLI から確認・操作し、別ペインの Claude Code・Codex などへ指示を送って協調させる。ユーザーが Herdr を明示したとき、Herdr の別エージェントへ送る、ペインへタスクを投げる、agent 状態を待つ、pane 出力を読む、pane を split して agent を起動する、司令塔・参謀・レビュー・ハーネス・実行役といったチーム編成で複数 agent を統括する、といった依頼で使用する。プロンプト送信は `herdr agent prompt --wait` で送信と完了待ちを一度に行う。
 ---
 
 # Herdr
@@ -17,31 +17,40 @@ test "${HERDR_ENV:-}" = 1
 
 失敗したら、Herdr 内で動いていないことをユーザーへ伝えて停止する。外部から、ユーザーが操作中の Herdr session を推測で制御しない。
 
-インストール済み CLI を構文の正とする。bare `herdr` は TUI を起動するため、調査には使わない。
+インストール済み CLI を構文の正とする。CLI は更新で subcommand が増減する（旧 `herdr wait` と `herdr agent send` は廃止済み）。bare `herdr` は TUI を起動するため、調査には使わない。
 
 ```zsh
 herdr --version
 herdr --help
-herdr agent
-herdr pane
-herdr wait
+herdr agent --help
+herdr pane --help
+herdr tab --help
 ```
+
+bare subcommand（`herdr agent` 等）も usage を表示するが非ゼロで終了するため、調査には `--help` を使う。
 
 `workspace_id`、`tab_id`、`pane_id`、`terminal_id` は opaque な値として扱う。番号や表示順から組み立てず、JSON 応答から取得する。
 
-## 鉄則: 本文と Enter を `pane run` で送る
+## 鉄則: agent へは `agent prompt`、shell へは `pane run`
 
-別 pane へプロンプトやコマンドを送信するときは、原則として `pane run` を使う。
+別 pane の **agent** へプロンプトを送るときは `agent prompt` を使う。本文の送信と Enter が atomic で、`--wait` を付ければ完了待ちまで一度に行える。
 
 ```zsh
-herdr pane run "$pane_id" "$message"
+herdr agent prompt "$target" "$message" --wait --timeout 1800000
 ```
 
-`pane run` は本文と Enter を atomic に送る。送った文字列が入力欄に残らず、そのまま実行・送信される。
+- `--wait` は送信後に settled 状態（既定: idle / done / blocked）を待つ。`--until <status>` で待つ状態を指定できる。
+- 送信先 agent が non-working 状態のときに送信すると、5 秒以内に状態変化が観測されない場合 `agent_prompt_stalled` が返る。返ったら `pane read` で画面を確認する。
+- `--wait` は turn を追跡しない。agent が既に working のときは進行中 turn の完了にマッチしうるため、先に `agent wait` で idle を確認してから送る。
 
-- `herdr agent send <target> <text>` は文字列を入力するだけで Enter を押さない。送信・実行まで必要な通常用途では使わない。
-- 入力済みの文字列へ Enter だけ追送するときは `herdr pane send-keys "$pane_id" enter` を使う。
-- Enter を押さず入力欄へ置くだけ、とユーザーが明示した場合だけ `agent send` または `pane send-text` を使う。
+agent ではない **shell pane** でコマンドを実行するときは `pane run` を使う。
+
+```zsh
+herdr pane run "$pane_id" "$command"
+```
+
+- 入力済み文字列へ Enter だけ追送するときは `herdr pane send-keys "$pane_id" enter`。
+- Enter を押さず入力欄へ置くだけ、とユーザーが明示した場合だけ `pane send-text` を使う。
 - shell metacharacter を含む本文は shell で再解釈させず、引数として quote して渡す。
 
 ## 標準ワークフロー
@@ -55,7 +64,7 @@ herdr agent list
 herdr agent get <target>
 ```
 
-`target` には terminal ID、unique agent name、detected / reported agent label、pane ID を使用できる。複数候補がある場合は送信せず、対象を確認する。
+`target` には unique agent name と、agent をホストしている pane ID を使用できる。複数候補がある場合は送信せず、対象を確認する。
 
 現在の pane や同一 workspace の pane を確認するときは、focus に依存せず明示的な ID を使う。
 
@@ -70,13 +79,13 @@ herdr pane list --workspace "$HERDR_WORKSPACE_ID"
 `agent_status` が `working` の間は新しい指示を重ねない。`idle` を待ってから送る。
 
 ```zsh
-herdr pane get "$pane_id"
-herdr wait agent-status "$pane_id" --status idle --timeout 30000
+herdr agent get "$target"
+herdr agent wait "$target" --until idle --timeout 30000
 ```
 
-`blocked` の場合は `pane read` で画面を確認し、権限確認や質問への回答が必要か判断する。timeout したら再送せず、状態と出力を読む。
+`agent wait` は `--until` なしだと idle / done / blocked のいずれかで返る。`blocked` の場合は `pane read` で画面を確認し、権限確認や質問への回答が必要か判断する。timeout したら再送せず、状態と出力を読む。
 
-### 3. task packet を送信して Enter まで実行する
+### 3. task packet を送信して完了まで待つ
 
 暗黙の会話文脈に依存せず、repo、goal、scope、制約、成果物を含む自己完結した指示を作る。
 
@@ -86,10 +95,10 @@ Goal: 対象テストを実行して原因を調べる
 Scope: 読み取りとテスト実行のみ。ファイルは編集しない
 Deliverable: 実行コマンド、結果、原因候補を報告する'
 
-herdr pane run "$pane_id" "$message"
+herdr agent prompt "$target" "$message" --wait --timeout 1800000
 ```
 
-初回の実装 agent には、task packet の前に同じ `pane run` で role packet を送る。
+初回の実装 agent には、task packet の前に同じ方法で role packet を送る。
 
 ```text
 Role: implementation agent
@@ -99,21 +108,17 @@ Role: implementation agent
 - changed files / commands run / result を返す
 ```
 
-follow-up も必ず `pane run` で送る。
+follow-up も必ず `agent prompt` で送る。
+
+### 4. 結果を読む
 
 ```zsh
-herdr pane run "$pane_id" "次に failing test のログを確認して、原因だけ報告してください。"
-```
-
-### 4. 開始・完了を待って結果を読む
-
-```zsh
-herdr wait agent-status "$pane_id" --status working --timeout 30000
-herdr wait agent-status "$pane_id" --status done --timeout 120000
 herdr pane read "$pane_id" --source recent-unwrapped --lines 120
 ```
 
-foreground でユーザーが見ている pane は完了時に `done` ではなく `idle` になる場合がある。`pane get` で `idle` または `done` なら完了として扱う。`blocked` なら必要な入力を確認し、`unknown` なら agent 検出と pane 出力を確認する。
+`--wait` を使わず送信だけした場合や、外部イベント（CI・ビルド・成果物ファイル）を待つ場合は、`herdr pane wait-output "$pane_id" --regex <pattern> --timeout <ms>`（`--timeout` なしは無期限待機）や background の polling script（状態変化時のみ 1 行出力し、番兵文字列で exit する）で待つ。
+
+foreground でユーザーが見ている pane は完了時に `done` ではなく `idle` になる場合がある。`agent get` で `idle` または `done` なら完了として扱う。`blocked` なら必要な入力を確認し、`unknown` なら agent 検出と pane 出力を確認する。
 
 ## helper agent を新しい pane で起動する
 
@@ -124,16 +129,22 @@ herdr pane layout --pane "$HERDR_PANE_ID"
 herdr pane split --current --direction right --no-focus
 ```
 
-横幅が狭い場合は `--direction down` を使う。応答の `result.pane.pane_id` を読み、適切な label と通常の interactive command を設定する。
+横幅が狭い場合は `--direction down` を使う。応答 JSON から新しい pane_id を読み（`pane split` は `result.pane.pane_id`。フィールド名は CLI 更新で変わりうるため応答を確認する）、`agent start` で起動する。readiness 検出まで行われるため、`pane run` で起動コマンドを打つより確実。
 
 ```zsh
 herdr pane rename <returned-pane-id> "reviewer"
-herdr pane run <returned-pane-id> "codex"
-herdr wait agent-status <returned-pane-id> --status idle --timeout 30000
-herdr pane run <returned-pane-id> "現在の差分をレビューし、actionable な指摘だけ報告してください。"
+herdr agent start reviewer --kind codex --pane <returned-pane-id> -- -m <model> -c model_reasoning_effort=high
+herdr agent prompt <returned-pane-id> "現在の差分をレビューし、actionable な指摘だけ報告してください。" --wait
 ```
 
-agent の起動コマンドへ task を argv として混ぜない。interactive agent が `idle` になった後、task を `pane run` で送る。
+agent の起動コマンドへ task を argv として混ぜない。interactive agent が `idle` になった後、task を `agent prompt` で送る。
+
+- codex の終了に `/quit` は効かない。`herdr pane send-keys "$pane_id" "ctrl+c"` を 2 回送る。
+- モデルが "at capacity" で落ちることがある。起動直後に `pane read --source visible` で確認する。
+
+## チーム編成（司令塔・参謀・レビュー・ハーネス・実行役）
+
+複数 pane を役割分担させて実装→レビュー→検証のループを回す場合は、[references/team-orchestration.md](references/team-orchestration.md) を読んで適用する。標準レイアウト（2x2 グリッド + 役割ごとの既定モデル割当）、役割モデル、role packet / task packet のテンプレート、`[司令塔→参謀]` prefix のメッセージプロトコル、ハードリミット、司令塔の引き継ぎパケットを定義している。ユーザーが別指定しない限り、チーム編成の依頼にはこの標準レイアウトをそのまま適用する。
 
 ## 出力を読む
 
