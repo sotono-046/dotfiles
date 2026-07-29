@@ -2,9 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "CLAUDE_CODE_NO_FLICKER": "1",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-fable-5[1m]",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5[1m]"
+    "CLAUDE_CODE_NO_FLICKER": "1"
   },
   "permissions": {
     "allow": [
@@ -228,5 +226,5 @@
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "model": "opus[1m]"
+  "model": "sonnet"
 }
