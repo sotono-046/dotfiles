@@ -44,7 +44,7 @@ description: "コードベースの品質・セキュリティ・パフォーマ
 
 ### サブエージェントに渡す共通指示
 
-すべてのレビューワーは read-only で実行する。編集、commit、PR 作成、テスト自動修正は禁止する。`task-executor`、`quality-gainner`、`task-researcher`、`Research` など編集可能な agent を reviewer として使わない。
+すべてのレビューワーは read-only で実行する。編集、commit、PR 作成、テスト自動修正は禁止する。`general-purpose`、`Research` など編集可能な agent を reviewer として使わない。
 
 Task/Subagent で起動する場合:
 

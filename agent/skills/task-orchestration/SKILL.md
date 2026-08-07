@@ -19,12 +19,10 @@ description: "Taskツールを使用したサブエージェントの効率的�
 
 | サブエージェント   | 役割                       | 主な用途                             |
 | ------------------ | -------------------------- | ------------------------------------ |
-| `task-researcher`  | 事前調査・コンテキスト収集 | 実装前の現状把握、依存関係の調査     |
 | `plan-digger`      | プランレビュー・SOW作成    | 多視点レビュー、devil's advocate、SOW出力 |
-| `task-executor`    | タスク分割・実装実行       | 複雑なタスクの分割と段階的実装       |
-| `quality-gainner`  | 品質チェック・自動修正     | TypeScript/リントエラーの検出・修正  |
 | `Explore`          | コードベース探索・検索     | ファイル検索、コード構造の理解       |
 | `Plan`             | 実装計画の設計             | アーキテクチャ設計、実装戦略の立案   |
+| `general-purpose`  | 汎用の調査・実装・検証     | 専用サブエージェントが無い調査・分割実装・品質チェック全般 |
 
 ---
 
@@ -32,16 +30,16 @@ description: "Taskツールを使用したサブエージェントの効率的�
 
 ### フェーズ1: 調査（Investigation）
 
-複数の `task-researcher` を並列起動し、異なる観点から情報を収集する。
+複数の `Explore` / `general-purpose` を並列起動し、異なる観点から情報を収集する。
 
 ```
 # 並列調査の例
 Task ツールを複数回並列で呼び出し:
 
-1. subagent_type: task-researcher
+1. subagent_type: Explore
    prompt: "認証システムの現状実装を調査してください"
 
-2. subagent_type: task-researcher
+2. subagent_type: Explore
    prompt: "関連するAPIエンドポイントの構造を調査してください"
 
 3. subagent_type: Explore
@@ -62,29 +60,29 @@ prompt: "このイシューに対する実装プランをレビューし、SOW�
 
 ### フェーズ3: 実装（Execution）
 
-独立したサブタスクを `task-executor` で同時実行する。
+独立したサブタスクを `general-purpose` で同時実行する。ファイル集合が重ならないよう scope を分ける。
 
 ```
 # 並列実装の例
 Task ツールを複数回並列で呼び出し:
 
-1. subagent_type: task-executor
+1. subagent_type: general-purpose
    prompt: "ユーザー認証モジュールを実装してください"
 
-2. subagent_type: task-executor
+2. subagent_type: general-purpose
    prompt: "データベーススキーマを作成してください"
 ```
 
 ### フェーズ4: 検証（Verification）
 
-`quality-gainner` で品質をチェックし、問題を自動修正する。
+`general-purpose` に品質チェックと自動修正を委譲する。
 
 ```
 # 品質検証の例
 Task ツールを呼び出し:
 
-subagent_type: quality-gainner
-prompt: "実装したコードの品質をチェックし、問題があれば修正してください"
+subagent_type: general-purpose
+prompt: "実装したコードの型チェック・リント・潜在バグを検出し、問題があれば修正してください"
 ```
 
 ---
@@ -98,7 +96,7 @@ prompt: "実装したコードの品質をチェックし、問題があれば�
 ```
 Task ツールを呼び出し:
 
-subagent_type: task-executor
+subagent_type: general-purpose
 prompt: "全テストスイートを実行してください"
 run_in_background: true
 ```
@@ -137,7 +135,7 @@ run_in_background: true
 
 - 各エージェントの完了を確認してから次フェーズへ進む
 - 調査結果は実装エージェントに適切に引き継ぐ
-- 検証で発見された問題は `quality-gainner` が自動修正
+- 検証で発見された問題は検証フェーズの `general-purpose` が自動修正
 
 ### リソース管理
 
@@ -153,62 +151,61 @@ run_in_background: true
 
 ```
 1. [並列調査]
-   - task-researcher: 既存実装の調査
-   - task-researcher: 関連するテストの調査
+   - Explore: 既存実装の調査
+   - Explore: 関連するテストの調査
    - Explore: ディレクトリ構造の確認
 
 2. [計画・レビュー]
    - plan-digger: SOW作成と反復レビュー
 
 3. [並列実装]
-   - task-executor: コア機能の実装
-   - task-executor: テストの実装
+   - general-purpose: コア機能の実装
+   - general-purpose: テストの実装
 
 4. [検証・修正]
-   - quality-gainner: 品質チェックと自動修正
+   - general-purpose: 品質チェックと自動修正
 ```
 
 ### パターンB: バグ修正
 
 ```
 1. [調査]
-   - task-researcher: バグの原因調査
-   - Explore: 関連コードの探索
+   - Explore: バグの原因調査と関連コードの探索
 
 2. [実装]
-   - task-executor: 修正の実装
+   - general-purpose: 修正の実装
 
 3. [検証]
-   - quality-gainner: 修正の検証と品質チェック
+   - general-purpose: 修正の検証と品質チェック
 ```
 
 ### パターンC: リファクタリング
 
 ```
 1. [並列調査]
-   - task-researcher: 対象コードの依存関係調査
-   - task-researcher: 影響範囲の調査
+   - Explore: 対象コードの依存関係調査
+   - Explore: 影響範囲の調査
 
 2. [計画]
    - plan-digger: リファクタリング計画のSOW作成
 
 3. [段階的実装]
-   - task-executor: 段階1の実装
+   - general-purpose: 段階1の実装
    - [検証後]
-   - task-executor: 段階2の実装
+   - general-purpose: 段階2の実装
 
 4. [最終検証]
-   - quality-gainner: 全体の品質チェックと修正
+   - general-purpose: 全体の品質チェックと修正
 ```
 
 ### パターンD: クイック修正
 
 ```
 1. [実装]
-   - task-executor: 修正の実装
+   - general-purpose: 修正の実装
 
 2. [検証]
-   - quality-gainner: 品質チェック
+   - general-purpose: 品質チェック
 ```
 
 ### パターンE: プランレビュー Fan-out
@@ -236,7 +233,7 @@ run_in_background: true
    - 最終 devil's advocate で evidence-backed な新規 High/Medium がなければ完了
 ```
 
-軽量タスクでは security / correctness / test の 3 観点に縮退してよい。各レビューワーは編集、commit、PR 作成、テスト自動修正をしない。`task-executor`、`quality-gainner`、`task-researcher` は編集可能な agent なので reviewer として使わない。
+軽量タスクでは security / correctness / test の 3 観点に縮退してよい。各レビューワーは編集、commit、PR 作成、テスト自動修正をしない。`general-purpose` は編集可能な agent なので reviewer として使わない。
 
 ---
 

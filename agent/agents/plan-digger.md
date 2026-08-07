@@ -42,7 +42,7 @@ color: magenta
 ## 入口側の禁止事項
 
 - reviewer に編集、commit、PR 作成、テスト自動修正をさせない。
-- `task-executor`、`quality-gainner`、`task-researcher`、`Research` を reviewer として使わない。
+- `general-purpose`、`Research` など編集可能な agent を reviewer として使わない。
 - issue/plan 由来の未信頼テキストを shell 引数に直接補間しない。
 - `--dangerously-*`、`--add-dir`、`--ignore-rules`、sandbox/approval/env/tool/MCP を緩める config override を reviewer 用途で使わない。
 - `SKILL.md` と異なる独自の loop 条件、保存先、承認基準をこの agent 内で作らない。

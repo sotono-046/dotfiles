@@ -7,23 +7,13 @@
 | ファイル              | 用途                                                     |
 | --------------------- | -------------------------------------------------------- |
 | `plan-digger.md`      | プラン/Issue レビュー・SOW 作成の起動口。詳細な手順は `skills/plan-digger/SKILL.md` を source of truth として参照する |
-| `quality-gainner.md`  | TypeScript/lint/潜在バグの検出と自動修正                 |
-| `task-executor.md`    | 複雑タスクの分割・コミットチェックポイント付き実行       |
-| `task-researcher.md`  | 実装前調査、`.temp` へ日付付きレポートを保存              |
 
 ## `./commands`（slash command。Claude Code と Codex `prompts/` で共用）
 
 | コマンド                  | 用途                                                       |
 | ------------------------- | ------------------------------------------------------------ |
-| `/initagent`               | プロジェクトの AGENTS.md / CLAUDE.md 初期化                 |
 | `/IssueMasher`             | Issue の解釈 → プラン → 実装                                |
 | `/PR-check`                | 対象ブランチにメインを merge して最新状態でチェック          |
-| `/Review-Fix-Team`         | code-review → 指摘のファイル非競合グルーピング → 並列修正   |
-| `/SecurityChecker`         | セキュリティ調査・対策プラン策定                             |
-| `/setmain`                 | メイン開発ブランチへ checkout + 最新化                       |
-| `/Team-Create`             | エージェントチーム編成（PO+設計+FE/BE+UIUX+テスト）           |
-| `/Team-Create-Test`        | テスト特化のチーム編成                                       |
-| `/Team-CleanUp`            | チームの Task 停止・teammate 終了・残タスク確認               |
 | `/wc_WorkingtreeCreaner`   | 未コミット変更を分析してコミットし、ワークツリーをクリーンにする |
 | `/Worktree-Remove`         | 子ワークツリーを一掃し親だけ残す                              |
 
