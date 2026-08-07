@@ -1,6 +1,6 @@
 ---
 name: herdr
-description: Herdr の workspace / tab / pane / agent を CLI から確認・操作し、別ペインの Claude Code・Codex などへ指示を送って協調させる。ユーザーが Herdr を明示したとき、Herdr の別エージェントへ送る、ペインへタスクを投げる、agent 状態を待つ、pane 出力を読む、pane を split して agent を起動する、司令塔・参謀・レビュー・ハーネス・実行役といったチーム編成で複数 agent を統括する、といった依頼で使用する。プロンプト送信は `herdr agent prompt --wait` で送信と完了待ちを一度に行う。
+description: Herdr の workspace / tab / pane / agent を CLI から確認・操作し、別ペインの Claude Code・Codex などへ指示を送って協調させる。ユーザーが Herdr を明示したとき、Herdr の別エージェントへ送る、ペインへタスクを投げる、agent 状態を待つ、pane 出力を読む、pane を split して agent を起動する、司令塔・参謀・レビュー・ハーネス・実行役といったチーム編成で複数 agent を統括する、といった依頼で使用する。プロンプト送信は `herdr agent prompt --wait` で送信と完了待ちを一度に行う。「チームで回して」「パイプラインで」「P-Aで」など規模・難度に応じたプリセット編成を求められたときは references/pipelines.md の Helix プリセット（P-A〜P-F）も適用する。
 ---
 
 # Herdr
@@ -182,6 +182,19 @@ agent の起動コマンドへ task を argv として混ぜない。interactive
 ## チーム編成（司令塔・参謀・レビュー・ハーネス・実行役）
 
 複数 pane を役割分担させて実装→レビュー→検証のループを回す場合は、[references/team-orchestration.md](references/team-orchestration.md) を読んで適用する。標準レイアウト（2x2 グリッド + 役割ごとの既定モデル割当）、役割モデル、role packet / task packet のテンプレート、`[司令塔→参謀]` prefix のメッセージプロトコル、ハードリミット、司令塔の引き継ぎパケットを定義している。ユーザーが別指定しない限り、チーム編成の依頼にはこの標準レイアウトをそのまま適用する。
+
+標準 2x2 で規模・難度が足りない場合（milestone 5+ の複数 workstream、基盤変更級の設計難度、並列リサーチ、出荷前の独立監査など）は、[references/pipelines.md](references/pipelines.md) の Helix プリセット（P-A〜P-F、M-# mission mapping）から選ぶ。「Helix」「P-Aで」「パイプラインで」という明示語彙だけでなく、上記のような規模・難度の記述からも該当プリセットを判断してよい。
+
+pipelines.md は Supervisor / Commander / Specialist / Implementer / Researcher / Validator という役割名と model tier を使う。team-orchestration.md の役割とはおおよそ次のように対応するが、pipelines.md 側の粒度が細かく model tier も異なる（Commander は Sol High、参謀は Fable/Claude Code 級で別モデル）ため、両方を同時に読むときは呼称を混同しない。
+
+| team-orchestration.md | pipelines.md（近い役割） |
+| --- | --- |
+| 司令塔 | Supervisor |
+| 参謀 | Commander（実装統括の権限がより強い） |
+| レビュー | Peer reviewer / Rubric reviewer |
+| ハーネス | Validator |
+| 実行役 | Specialist / Implementer |
+| （相当なし） | Researcher（P-E 専用） |
 
 ## 出力を読む
 
