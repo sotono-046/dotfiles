@@ -19,6 +19,8 @@ test "${HERDR_ENV:-}" = 1
 
 インストール済み CLI を構文の正とする。CLI は更新で subcommand が増減する（旧 `herdr wait` と `herdr agent send` は廃止済み）。bare `herdr` は TUI を起動するため、調査には使わない。
 
+下の早見表（`herdr 0.8.0` 基準）でほとんどの操作は足りる。`--help` の実行は、早見表のコマンドがエラーになる・見当たらないなど CLI バージョン差異を検知したときだけにする。
+
 ```zsh
 herdr --version
 herdr --help
@@ -28,6 +30,25 @@ herdr tab --help
 ```
 
 bare subcommand（`herdr agent` 等）も usage を表示するが非ゼロで終了するため、調査には `--help` を使う。
+
+### コマンド早見表
+
+| 操作 | コマンド |
+| --- | --- |
+| agent 一覧 | `herdr agent list` |
+| agent 状態確認 | `herdr agent get <target>` |
+| agent が idle になるまで待つ | `herdr agent wait <target> --until idle --timeout <ms>` |
+| agent へ送信して完了待ち | `herdr agent prompt <target> "<text>" --wait --timeout <ms>` |
+| agent 出力を読む | `herdr agent read <target> --source recent-unwrapped --lines <n>` |
+| pane 出力を読む | `herdr pane read <pane_id> --source recent-unwrapped --lines <n>` |
+| pane で shell command 実行 | `herdr pane run <pane_id> "<command>"` |
+| pane に Enter だけ追送 | `herdr pane send-keys <pane_id> enter` |
+| pane を split して新 pane を作る | `herdr pane split --current --direction right\|down --no-focus` |
+| pane を rename | `herdr pane rename <pane_id> "<label>"` |
+| pane で agent を起動 | `herdr agent start <name> --kind <claude\|codex> --pane <pane_id> -- <agent args>` |
+| agent 検出根拠を調べる | `herdr agent explain <pane_id>` |
+| worktree 一覧 / 作成 / open | `herdr worktree list` / `herdr worktree create ...` / `herdr worktree open ...` |
+| herdr 外の出力パターンを待つ | `herdr pane wait-output <pane_id> --regex <pattern> --timeout <ms>` |
 
 `workspace_id`、`tab_id`、`pane_id`、`terminal_id` は opaque な値として扱う。番号や表示順から組み立てず、JSON 応答から取得する。
 
@@ -66,6 +87,8 @@ herdr agent get <target>
 
 `target` には unique agent name と、agent をホストしている pane ID を使用できる。複数候補がある場合は送信せず、対象を確認する。
 
+`agent target ... not found` は、pane の split / rename / close をまたいで古い pane ID や agent 名を使い回したときに起きる代表的な失敗。`agent prompt` / `agent wait` を送る直前には必ず `herdr agent list` で現在の一覧を取り直し、ID や名前を確認済みの値に更新する。前の turn で取得した ID をキャッシュしたまま次の turn で使わない。
+
 現在の pane や同一 workspace の pane を確認するときは、focus に依存せず明示的な ID を使う。
 
 ```zsh
@@ -84,6 +107,15 @@ herdr agent wait "$target" --until idle --timeout 30000
 ```
 
 `agent wait` は `--until` なしだと idle / done / blocked のいずれかで返る。`blocked` の場合は `pane read` で画面を確認し、権限確認や質問への回答が必要か判断する。timeout したら再送せず、状態と出力を読む。
+
+### 待機の作法（timeout は異常ではない）
+
+`agent wait` / `agent prompt --wait` の timeout（exit 1）は「まだ working」を示す正常な信号であり、失敗ではない。実測でも大半の agent 起因エラーは timeout の取り扱いミスに集中している。
+
+- 長時間タスクには `--timeout 300000`（5分）以上を指定する。実装・調査系の task packet では `1800000`（30分）を既定にする。
+- timeout（`--timeout` 超過）と `agent_prompt_stalled`（非 working 状態から送信して 5 秒以内に状態変化が観測されない）は別のエラーだが、対処は同じ。どちらも即座に再送しない。`herdr agent get "$target"` で現在状態を確認し、必要なら `pane read` で出力を読んでから次の待機を判断する。
+- `herdr agent wait "$target" ... >/dev/null 2>&1; herdr agent prompt "$target" "$message"` のように wait のエラーを握りつぶして盲目的に送信しない。wait が失敗した状態を無視して送ると、working 中の agent へ指示を重ねる事故につながる。
+- foreground の `sleep N` で待ってから `pane read` するパターンは harness にブロックされるため使わない。herdr 外の状態（CI・ビルド・成果物ファイルなど）を待つ場合は `herdr pane wait-output` か、background の polling script（Monitor / `run_in_background`、状態変化時のみ 1 行出力し番兵文字列で exit する）を使う。
 
 ### 3. task packet を送信して完了まで待つ
 
@@ -112,9 +144,14 @@ follow-up も必ず `agent prompt` で送る。
 
 ### 4. 結果を読む
 
+agent 名や pane ID が既に分かっている場合は `herdr agent read "$target"` で直接読める（`pane read` と同じ `--source` / `--lines` を取る）。pane ID を経由せずに読みたいときはこちらを優先する。
+
 ```zsh
+herdr agent read "$target" --source recent-unwrapped --lines 120
 herdr pane read "$pane_id" --source recent-unwrapped --lines 120
 ```
+
+送信が CLI 側で拒否された場合（例: フラグの組み合わせが無効、対象が unknown 状態など）、プロンプトは**未送信**として扱う。エラーを無視して次の待機に進まず、`agent read` / `pane read` で実際に届いたかを確認してから、必要なら送り直す。
 
 `--wait` を使わず送信だけした場合や、外部イベント（CI・ビルド・成果物ファイル）を待つ場合は、`herdr pane wait-output "$pane_id" --regex <pattern> --timeout <ms>`（`--timeout` なしは無期限待機）や background の polling script（状態変化時のみ 1 行出力し、番兵文字列で exit する）で待つ。
 
@@ -167,3 +204,4 @@ herdr agent explain "$pane_id"
 - active session 内から `herdr server stop` を実行しない。
 - 同じファイルを複数 agent に同時編集させない。
 - agent の応答は司令塔側で差分と検証結果を確認してから採用する。
+- `agent wait` / `agent prompt --wait` の timeout で即座に再送しない。状態確認を挟む。

@@ -16,7 +16,7 @@
 
 - 役割はすべて pane label にする（`司令塔` `参謀` `レビュー` `ハーネス` `実行役1` `実行役2`）。`herdr pane rename` と `herdr tab rename`（`司令室` / `実行室`）で誰が何をしているか一目でわかる状態を保つ。
 - 実装役とレビュー役を同一 agent に兼務させない。レビューの独立性が判断材料になる。
-- 全 pane を同じ worktree で動かし、触ってはいけない checkout（本体リポジトリ等）を role packet に明記する。
+- 全 pane を同じ worktree で動かし、触ってはいけない checkout（本体リポジトリ等）を role packet に明記する。worktree を新設する場合は `herdr worktree create` で作り、既存 worktree の再利用は `herdr worktree list` で確認してから `herdr worktree open` を使う。
 - 並列実行役はファイル集合が重ならないように scope を切る。task packet に「他 pane の担当ファイルには触らない」と担当領域を両方書く。
 
 ## 標準レイアウト: 2x2 グリッドと既定モデル割当
