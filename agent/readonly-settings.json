@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(//Users/sotono/Documents/_work/2506_bgk_yuyu/**)"
+    ]
+  }
+}
