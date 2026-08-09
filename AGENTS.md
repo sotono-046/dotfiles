@@ -2,7 +2,7 @@
 
 ## プロジェクト構成
 
-このリポジトリは個人用 dotfiles とエージェント設定を管理します。ルート直下の `.zshrc`、`.tmux.conf`、`starship.toml`、`zellij.conf`、`zellij.kdl`、`ccstatusline.json`、`Brewfile`、`install.sh` はユーザー環境に直接反映される設定です。`raycast/` には Raycast 用の補助スクリプトがあります。`agent/` は Codex / Claude 向け設定で、`agent/skills/` は skill パッケージ、`agent/commands/` は slash command プロンプト、`agent/agents/` は subagent 定義、`agent/settings.json` はツール権限と hook を管理します。`agent/` 配下を変更するときは `agent/AGENTS.md` にも従ってください。
+このリポジトリは個人用 dotfiles とエージェント設定を管理します。ルート直下の `.zshrc`、`.tmux.conf`、`starship.toml`、`zellij.conf`、`zellij.kdl`、`ccstatusline.json`、`Brewfile`、`install.sh` はユーザー環境に直接反映される設定です。`raycast/` には Raycast 用の補助スクリプトがあります。`agent/` は Codex / Claude 向け設定で、`agent/skills/` は再利用可能な workflow、`agent/agents/` は subagent 定義、`agent/settings.json` はツール権限と hook を管理します。`agent/` 配下を変更するときは `agent/AGENTS.md` にも従ってください。
 
 ## 開発・検証コマンド
 
@@ -19,7 +19,7 @@
 
 ## テストとレビュー方針
 
-変更内容に対して最も狭く安全な検証を実行します。shell を編集した場合は、対象 script に `zsh -n` を通し、可能なら実環境に影響しない一時環境で command を実行します。agent skill や command を編集した場合は、Markdown の表示、参照 path、script、trigger phrase が存在することを確認します。新しい skill、slash command、エージェント向けプロンプトを作成または大幅改訂した場合は、別エージェントによる実行レビューで不明瞭点を洗い出してからブラッシュアップしてください。install 周りの変更では、`./install.sh` を走らせる前に symlink target を dry review してください。
+変更内容に対して最も狭く安全な検証を実行します。shell を編集した場合は、対象 script に `zsh -n` を通し、可能なら実環境に影響しない一時環境で command を実行します。agent skill や prompt を編集した場合は、Markdown の表示、参照 path、script、trigger phrase が存在することを確認します。新しい skill やエージェント向けプロンプトを作成または大幅改訂した場合は、別エージェントによる実行レビューで不明瞭点を洗い出してからブラッシュアップしてください。install 周りの変更では、`./install.sh` を走らせる前に symlink target を dry review してください。
 
 ## Commit と Pull Request
 
