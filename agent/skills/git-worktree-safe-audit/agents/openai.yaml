@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Worktree Safe Audit"
+  short_description: "Audit linked worktrees without deleting data"
+  default_prompt: "Use $git-worktree-safe-audit to inspect linked worktrees and report safe cleanup candidates."
