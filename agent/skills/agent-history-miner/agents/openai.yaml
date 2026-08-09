@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent History Miner"
+  short_description: "Mine recurring workflows from agent histories"
+  default_prompt: "Use $agent-history-miner to find recurring workflows and skill opportunities in bounded Codex and Claude histories."
