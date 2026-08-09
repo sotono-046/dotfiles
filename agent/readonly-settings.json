@@ -1,7 +1,37 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "disableClaudeAiConnectors": true,
+  "disableAllHooks": true,
+  "hooks": {},
   "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "WebFetch",
+      "WebSearch"
+    ],
     "deny": [
-      "Edit(//Users/sotono/Documents/_work/2506_bgk_yuyu/**)"
-    ]
+      "Write",
+      "Edit",
+      "NotebookEdit",
+      "Bash",
+      "Agent",
+      "Skill"
+    ],
+    "defaultMode": "dontAsk",
+    "disableBypassPermissionsMode": "disable"
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "autoAllowBashIfSandboxed": false,
+    "allowUnsandboxedCommands": false,
+    "excludedCommands": [],
+    "filesystem": {
+      "denyWrite": [
+        "/"
+      ]
+    }
   }
 }

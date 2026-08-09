@@ -12,8 +12,11 @@ HOME_DIR="${HOME_DIR:-$DATA_DIR/home}"
 PREFIX="${PREFIX:-$DATA_DIR/local}"
 BIN_DIR="${BIN_DIR:-$DATA_DIR/bin}"
 TMP_DIR="${TMP_DIR:-$DATA_DIR/.local/tmp-docker-install}"
+DRY_RUN=0
+LINKS_ONLY=0
+PREPARE_REPLACING=0
+SKILL_SOURCE="$SCRIPT_DIR/agent/skills"
 
-mkdir -p "$HOME_DIR" "$PREFIX" "$BIN_DIR" "$TMP_DIR"
 export PATH="$BIN_DIR:$HOME_DIR/bin:$PATH"
 
 log() {
@@ -22,6 +25,123 @@ log() {
 
 warn() {
   printf 'WARN: %s\n' "$*" >&2
+}
+
+path_exists() {
+  [ -e "$1" ] || [ -L "$1" ]
+}
+
+normalize_absolute_path() {
+  local raw="$1"
+  local part result
+  local depth=0
+  local -a parts=()
+  local -a normalized=()
+
+  IFS='/' read -r -a parts <<< "$raw"
+  for part in "${parts[@]}"; do
+    case "$part" in
+      ''|.) continue ;;
+      ..)
+        if [ "$depth" -gt 0 ]; then
+          depth=$((depth - 1))
+          unset "normalized[$depth]"
+        fi
+        ;;
+      *)
+        normalized[depth]="$part"
+        depth=$((depth + 1))
+        ;;
+    esac
+  done
+
+  result="/"
+  for part in "${normalized[@]}"; do
+    if [ "$result" = "/" ]; then
+      result="/$part"
+    else
+      result="$result/$part"
+    fi
+  done
+  printf '%s\n' "$result"
+}
+
+canonicalize_directory_path() {
+  local input="$1"
+  local probe="$input"
+  local leaf parent suffix=""
+  local canonical_base
+
+  # Parent traversal can change meaning across symlinked ancestors. Reject it
+  # instead of guessing which path a later write uses.
+  case "$input" in
+    */../*|*/..) return 1 ;;
+  esac
+
+  while [ "$probe" != "/" ] && [ "${probe%/}" != "$probe" ]; do
+    probe="${probe%/}"
+  done
+
+  while ! path_exists "$probe"; do
+    [ "$probe" != "/" ] || return 1
+    leaf="${probe##*/}"
+    parent="${probe%/*}"
+    [ -n "$parent" ] || parent="/"
+    if [ -n "$leaf" ]; then
+      suffix="$leaf${suffix:+/$suffix}"
+    fi
+    probe="$parent"
+    while [ "$probe" != "/" ] && [ "${probe%/}" != "$probe" ]; do
+      probe="${probe%/}"
+    done
+  done
+
+  canonical_base="$(cd -P -- "$probe" 2>/dev/null && pwd -P)" || return 1
+  normalize_absolute_path "$canonical_base${suffix:+/$suffix}"
+}
+
+run_cmd() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    printf 'DRY-RUN:'
+    printf ' %q' "$@"
+    printf '\n'
+    return 0
+  fi
+  "$@"
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --links-only) LINKS_ONLY=1 ;;
+      --dry-run) DRY_RUN=1 ;;
+      -h|--help)
+        printf 'Usage: ./install_for_docker.sh [--links-only] [--dry-run]\n'
+        exit 0
+        ;;
+      *)
+        printf 'Unknown option: %s\n' "$1" >&2
+        exit 2
+        ;;
+    esac
+    shift
+  done
+  case "$HOME_DIR" in
+    /*) ;;
+    *)
+      printf 'HOME_DIR must be an absolute path: %s\n' "$HOME_DIR" >&2
+      exit 2
+      ;;
+  esac
+  local canonical_home
+  if ! canonical_home="$(canonicalize_directory_path "$HOME_DIR")"; then
+    printf 'HOME_DIR must resolve to a directory path: %s\n' "$HOME_DIR" >&2
+    exit 2
+  fi
+  if [ "$canonical_home" = "/" ]; then
+    printf 'HOME_DIR must not resolve to /.\n' >&2
+    exit 2
+  fi
 }
 
 need_cmd() {
@@ -59,8 +179,7 @@ install_gh() {
   work="$TMP_DIR/gh"
 
   log "Installing gh ${version} to ${BIN_DIR}"
-  rm -rf "$work"
-  mkdir -p "$work"
+  prepare_work_directory "$work"
   curl -fL --retry 3 -o "$work/$asset" "$url"
   tar -xzf "$work/$asset" -C "$work"
   cp "$work/gh_${version}_linux_${arch}/bin/gh" "$BIN_DIR/gh"
@@ -85,8 +204,7 @@ install_starship() {
   work="$TMP_DIR/starship"
 
   log "Installing starship ${version} to ${BIN_DIR}"
-  rm -rf "$work"
-  mkdir -p "$work"
+  prepare_work_directory "$work"
   curl -fL --retry 3 -o "$work/$asset" "$url"
   tar -xzf "$work/$asset" -C "$work"
   cp "$work/starship" "$BIN_DIR/starship"
@@ -107,8 +225,7 @@ install_zsh_userland() {
   log "Installing zsh under ${PREFIX} without sudo"
   local work
   work="$TMP_DIR/zsh"
-  rm -rf "$work"
-  mkdir -p "$work"
+  prepare_work_directory "$work"
   (
     cd "$work"
     apt-get download zsh zsh-common
@@ -126,13 +243,39 @@ EOF
   chmod +x "$BIN_DIR/zsh"
 }
 
+next_backup_path() {
+  local path="$1"
+  local base
+  base="${path}.dotbackup.$(date +%Y%m%d%H%M%S)"
+  local candidate="$base"
+  local suffix=1
+  while path_exists "$candidate"; do
+    candidate="${base}.${suffix}"
+    suffix=$((suffix + 1))
+  done
+  printf '%s\n' "$candidate"
+}
+
 backup_path() {
   local path="$1"
-  if [ -e "$path" ] && [ ! -L "$path" ]; then
-    local backup="${path}.dotbackup.$(date +%Y%m%d%H%M%S)"
-    log "Backing up $path to $backup"
-    mv "$path" "$backup"
-  fi
+  path_exists "$path" || return 0
+  local backup
+  backup="$(next_backup_path "$path")"
+  log "Backing up $path to $backup"
+  run_cmd mv "$path" "$backup"
+}
+
+prepare_work_directory() {
+  local work="$1"
+  backup_path "$work"
+  run_cmd mkdir -p "$work"
+}
+
+safe_unlink() {
+  local path="$1"
+  [ -L "$path" ] || return 0
+  log "Unlinking managed symlink: $path"
+  run_cmd unlink "$path"
 }
 
 link_file() {
@@ -144,11 +287,118 @@ link_file() {
     return
   fi
 
-  mkdir -p "$(dirname "$dest")"
+  if [ -L "$dest" ] && [ "$(readlink "$dest")" = "$src" ]; then
+    log "Already linked: $dest"
+    return
+  fi
   backup_path "$dest"
-  rm -rf "$dest"
-  ln -s "$src" "$dest"
+  run_cmd mkdir -p "$(dirname "$dest")"
+  run_cmd ln -s "$src" "$dest"
   log "Linked $dest -> $src"
+}
+
+remove_managed_link() {
+  local dest="$1"
+  local expected="$2"
+  if [ ! -L "$dest" ]; then
+    if path_exists "$dest"; then
+      log "Preserving user-owned path: $dest"
+    fi
+    return 0
+  fi
+  if [ "$(readlink "$dest")" = "$expected" ]; then
+    safe_unlink "$dest"
+  else
+    log "Preserving non-managed symlink: $dest"
+  fi
+}
+
+prepare_real_directory() {
+  local dest="$1"
+  PREPARE_REPLACING=0
+  if [ -L "$dest" ]; then
+    PREPARE_REPLACING=1
+    if [ "$(readlink "$dest")" = "$SKILL_SOURCE" ]; then
+      safe_unlink "$dest"
+    else
+      backup_path "$dest"
+    fi
+  elif path_exists "$dest" && [ ! -d "$dest" ]; then
+    PREPARE_REPLACING=1
+    backup_path "$dest"
+  elif [ ! -d "$dest" ]; then
+    PREPARE_REPLACING=1
+  fi
+  if [ "$PREPARE_REPLACING" -eq 1 ]; then
+    run_cmd mkdir -p "$dest"
+  fi
+}
+
+remove_stale_skill_links() {
+  local skills_home="$1"
+  local skip_scan="$2"
+  [ "$skip_scan" -eq 0 ] || return 0
+  local existing name target
+  for existing in "$skills_home"/* "$skills_home"/.*; do
+    path_exists "$existing" || continue
+    name="$(basename "$existing")"
+    case "$name" in .|..|.system) continue ;; esac
+    [ -L "$existing" ] || continue
+    target="$(readlink "$existing")"
+    case "$target" in
+      "$SKILL_SOURCE"/*)
+        [ -f "$SKILL_SOURCE/$name/SKILL.md" ] || safe_unlink "$existing"
+        ;;
+    esac
+  done
+}
+
+bootstrap_codex_system() {
+  local skills_home="$1"
+  local parent_replaced="$2"
+  local source_system="$SKILL_SOURCE/.system"
+  local dest_system="$skills_home/.system"
+  [ -d "$source_system" ] || return 0
+  if [ "$DRY_RUN" -eq 1 ] && [ "$parent_replaced" -eq 1 ]; then
+    run_cmd cp -R "$source_system" "$dest_system"
+    return 0
+  fi
+  if [ -d "$dest_system" ] && [ ! -L "$dest_system" ]; then
+    log "Preserving Codex-owned system skills: $dest_system"
+    return 0
+  fi
+  if [ -L "$dest_system" ] && [ "$(readlink "$dest_system")" = "$source_system" ]; then
+    safe_unlink "$dest_system"
+  elif path_exists "$dest_system"; then
+    backup_path "$dest_system"
+  fi
+  run_cmd cp -R "$source_system" "$dest_system"
+  log "Bootstrapped Codex-owned system skills: $dest_system"
+}
+
+install_skill_links() {
+  local skills_home="$1"
+  local runtime="$2"
+  prepare_real_directory "$skills_home"
+  local parent_replaced="$PREPARE_REPLACING"
+  remove_stale_skill_links "$skills_home" "$parent_replaced"
+
+  local skill_src name
+  for skill_src in "$SKILL_SOURCE"/* "$SKILL_SOURCE"/.*; do
+    [ -d "$skill_src" ] || continue
+    [ -f "$skill_src/SKILL.md" ] || continue
+    name="$(basename "$skill_src")"
+    case "$name" in .|..|.system) continue ;; esac
+    if [ "$DRY_RUN" -eq 1 ] && [ "$parent_replaced" -eq 1 ]; then
+      run_cmd ln -s "$skill_src" "$skills_home/$name"
+    else
+      link_file "$skill_src" "$skills_home/$name"
+    fi
+  done
+
+  if [ "$runtime" = "codex" ]; then
+    bootstrap_codex_system "$skills_home" "$parent_replaced"
+  fi
 }
 
 write_docker_shell_bootstrap() {
@@ -223,6 +473,9 @@ install_tpm() {
 }
 
 link_dotfiles() {
+  remove_managed_link "$HOME_DIR/.claude/commands" "$SCRIPT_DIR/agent/commands"
+  remove_managed_link "$HOME_DIR/.codex/prompts" "$SCRIPT_DIR/agent/commands"
+
   link_file "$SCRIPT_DIR/.zshrc" "$HOME_DIR/.zshrc"
   link_file "$SCRIPT_DIR/starship.toml" "$HOME_DIR/.config/starship.toml"
   link_file "$SCRIPT_DIR/.tmux.conf" "$HOME_DIR/.tmux.conf"
@@ -231,35 +484,41 @@ link_dotfiles() {
   link_file "$SCRIPT_DIR/agent/AGENTS.md" "$HOME_DIR/.codex/AGENTS.md"
   link_file "$SCRIPT_DIR/agent/AGENTS.md" "$HOME_DIR/.gemini/GEMINI.md"
   link_file "$SCRIPT_DIR/agent/agents" "$HOME_DIR/.claude/agents"
-  link_file "$SCRIPT_DIR/agent/commands" "$HOME_DIR/.claude/commands"
-  link_file "$SCRIPT_DIR/agent/commands" "$HOME_DIR/.codex/prompts"
   link_file "$SCRIPT_DIR/agent/settings.json" "$HOME_DIR/.claude/settings.json"
-  link_file "$SCRIPT_DIR/agent/skills" "$HOME_DIR/.claude/skills"
-  link_file "$SCRIPT_DIR/agent/skills" "$HOME_DIR/.codex/skills"
+  install_skill_links "$HOME_DIR/.claude/skills" claude
+  install_skill_links "$HOME_DIR/.codex/skills" codex
   if [ -e "$SCRIPT_DIR/agent/statusline-command.sh" ]; then
     link_file "$SCRIPT_DIR/agent/statusline-command.sh" "$HOME_DIR/.claude/statusline-command.sh"
   fi
 }
 
 main() {
+  parse_args "$@"
   log "Docker dotfiles install"
   log "SCRIPT_DIR=$SCRIPT_DIR"
   log "HOME_DIR=$HOME_DIR"
   log "PREFIX=$PREFIX"
   log "BIN_DIR=$BIN_DIR"
 
-  if ! need_cmd curl || ! need_cmd python3 || ! need_cmd tar; then
-    warn "curl, python3, and tar are required for tool downloads"
+  if [ "$LINKS_ONLY" -eq 1 ]; then
+    run_cmd mkdir -p "$HOME_DIR"
+  elif [ "$DRY_RUN" -eq 1 ]; then
+    log "Would install userland tools and write Docker shell bootstrap"
   else
-    install_zsh_userland
-    install_gh
-    install_starship
+    mkdir -p "$HOME_DIR" "$PREFIX" "$BIN_DIR" "$TMP_DIR"
+    if ! need_cmd curl || ! need_cmd python3 || ! need_cmd tar; then
+      warn "curl, python3, and tar are required for tool downloads"
+    else
+      install_zsh_userland
+      install_gh
+      install_starship
+    fi
+    write_docker_shell_bootstrap
+    install_tpm
+    maybe_set_default_shell
   fi
 
-  write_docker_shell_bootstrap
   link_dotfiles
-  install_tpm
-  maybe_set_default_shell
 
   log "Install completed"
   log "Run: export PATH=\"$BIN_DIR:$HOME_DIR/bin:\$PATH\" && zsh"
