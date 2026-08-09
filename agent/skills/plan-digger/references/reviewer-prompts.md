@@ -83,7 +83,7 @@ Reviewer fallback must not use `--dangerously-*`, `--add-dir`, `--ignore-rules`,
 
 ## Fallback Scope
 
-When Task/Subagent fan-out is unavailable, start with one multi-perspective `codex exec` run or a reduced set:
+When the selected runtime's in-process fan-out is unavailable or cannot enforce the required read-only boundary, start with one multi-perspective `codex exec` run or a reduced set:
 
 - Always include user-requested perspectives.
 - If no perspective is requested, include `correctness`, `test`, and the highest-risk domain perspective.

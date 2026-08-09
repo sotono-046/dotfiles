@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Operations"
+  short_description: "Prepare scoped commits, pushes, and pull requests safely"
+  default_prompt: "Use $git-ops to prepare scoped changes and perform only the Git state changes I explicitly approved."

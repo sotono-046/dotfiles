@@ -1,0 +1,4 @@
+interface:
+  display_name: "Issue Masher"
+  short_description: "Prepare an issue branch and reviewed SOW safely"
+  default_prompt: "Use $issue-masher to inspect an issue and prepare its branch and reviewed implementation plan."

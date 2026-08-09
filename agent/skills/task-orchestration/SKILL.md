@@ -1,258 +1,123 @@
 ---
 name: task-orchestration
-description: "Taskツールを使用したサブエージェントの効率的な並列運用を提供するスキル。調査・実装・検証の各フェーズでサブエージェントを並列起動し、タスクを効率的に処理。対象：(1) 複数観点からの並列調査、(2) 独立サブタスクの同時実行、(3) バックグラウンドタスクの管理。"
+description: "独立性が高く成果物が重複しない調査・実装・検証を、Codex または Claude Code のサブエージェントへ安全に並列委譲する。複数観点の調査、非競合ファイルの同時実装、長時間監視の分離、fan-out を依頼されたときに使用する。同じ相手との継続的な往復は subagent-team、pane ベースの外部エージェント統括は herdr を使う。"
 ---
 
-# タスクオーケストレーション
+# Task Orchestration
 
-サブエージェントを効率的に並列運用し、複雑なタスクを分割・実行する。
+一発で完了できる独立サブタスクだけを fan-out する。利用可能な tool schema を最初に確認し、Codex と Claude Code の API を混ぜない。
 
-## トリガー条件
+## 1. 分割可能性を確認する
 
-- 複数観点からの調査が必要なとき
-- 独立した複数のサブタスクを実行するとき
-- 長時間タスクをバックグラウンドで実行するとき
+次をすべて満たすタスクだけ並列化する。
 
----
+- 成果物または担当ファイル集合が重複しない
+- 強い依存関係がなく、完了順に意味がない
+- 各 agent に自己完結した scope と完了条件を渡せる
+- 並列化の待ち時間短縮が起動・統合コストを上回る
 
-## 1. 利用可能なサブエージェント
+同じ agent と追加相談・差し戻しを何往復も行うことが主目的なら `subagent-team` を使う。軽量な単発タスクは司令塔が直接処理する。
 
-| サブエージェント   | 役割                       | 主な用途                             |
-| ------------------ | -------------------------- | ------------------------------------ |
-| `plan-digger`      | プランレビュー・SOW作成    | 多視点レビュー、devil's advocate、SOW出力 |
-| `Explore`          | コードベース探索・検索     | ファイル検索、コード構造の理解       |
-| `Plan`             | 実装計画の設計             | アーキテクチャ設計、実装戦略の立案   |
-| `general-purpose`  | 汎用の調査・実装・検証     | 専用サブエージェントが無い調査・分割実装・品質チェック全般 |
+## 2. 起動前に ownership を固定する
 
----
+1. runtime と利用可能な tool schema
+2. 最大同時 agent 数と時間・tool-call 予算
+3. 各 agent の役割、担当 path、除外 path、成果物
+4. read-only / edit 可否
+5. Git mode: 共有 worktree または独立 worktree
+6. commit owner と validation owner
 
-## 2. 並列実行の原則
+実装 packet には必ず次を含める。
 
-### フェーズ1: 調査（Investigation）
-
-複数の `Explore` / `general-purpose` を並列起動し、異なる観点から情報を収集する。
-
-```
-# 並列調査の例
-Task ツールを複数回並列で呼び出し:
-
-1. subagent_type: Explore
-   prompt: "認証システムの現状実装を調査してください"
-
-2. subagent_type: Explore
-   prompt: "関連するAPIエンドポイントの構造を調査してください"
-
-3. subagent_type: Explore
-   prompt: "設定ファイルとスキーマ定義を探索してください"
+```text
+role: <investigation|implementation|verification>
+repository: <absolute path>
+owned_paths:
+  - <path>
+excluded_paths:
+  - <path>
+task: <具体的な依頼>
+acceptance_criteria:
+  - <確認可能な条件>
+git_policy: <read-only | shared worktree: edit only; no stage/commit until owner GO | isolated worktree: state branch and commit owner>
+report: changed files, checks, results, remaining risks
 ```
 
-### フェーズ2: 計画（Planning）
+## 3. Runtime adapter を選ぶ
 
-`plan-digger` でプランを練り、SOWを作成する。
+| 操作 | Claude Code adapter | Codex adapter |
+| --- | --- | --- |
+| 起動 | 公開 schema の `Task` または `Agent` | `collaboration.spawn_agent` |
+| 稼働中の追送 | 公開されている task messaging tool | `collaboration.send_message` |
+| 完了 turn の再開 | 公開されている task messaging / 再起動 | `collaboration.followup_task` |
+| 状態確認 | task 一覧・notification | `collaboration.list_agents` |
+| 待機・回収 | `TaskOutput` がある環境ではそれを使う | `collaboration.wait_agent` |
+| background option | schema が対応する場合だけ `run_in_background` | 指定しない |
 
-```
-# プランニングの例
-Task ツールを呼び出し:
+### Codex
 
-subagent_type: plan-digger
-prompt: "このイシューに対する実装プランをレビューし、SOWを作成してください"
-```
+- `collaboration.spawn_agent` に一意な `task_name` と具体的な `message` を渡す。
+- 実行中 agent への補足は `collaboration.send_message` を使う。
+- idle / turn 完了済み agent に新しい turn を開始させる場合は `collaboration.followup_task` を使う。
+- 状態は `collaboration.list_agents`、mailbox update は `collaboration.wait_agent` で待つ。timeout だけを失敗と解釈しない。
+- `fork_turns` は必要最小限にする。model / reasoning override は明示要件がある場合だけ、その session で許可された値を使う。
+- `run_in_background`、`TaskOutput`、Claude の `subagent_type` / model 名を渡さない。
 
-### フェーズ3: 実装（Execution）
+### Claude Code
 
-独立したサブタスクを `general-purpose` で同時実行する。ファイル集合が重ならないよう scope を分ける。
+- session に公開された `Task` または `Agent` schema をそのまま使う。
+- `Explore`、`Plan`、`general-purpose` などの `subagent_type` は実在を確認してから選ぶ。
+- `run_in_background` と `TaskOutput` は Claude Code 側の schema が対応している場合だけ使う。
+- Claude 固有の tool 名・model 名・background option を Codex の呼び出しへコピーしない。
 
-```
-# 並列実装の例
-Task ツールを複数回並列で呼び出し:
+## 4. フェーズごとに実行する
 
-1. subagent_type: general-purpose
-   prompt: "ユーザー認証モジュールを実装してください"
+### 調査
 
-2. subagent_type: general-purpose
-   prompt: "データベーススキーマを作成してください"
-```
+異なる観点を read-only agent に割り当てる。秘密情報、除外 path、引用上限を packet に含める。複数 agent に同じ探索をさせない。
 
-### フェーズ4: 検証（Verification）
+### 計画
 
-`general-purpose` に品質チェックと自動修正を委譲する。
+多視点の SOW review は `plan-digger` を使う。調査結果を要約して渡し、生ログを重複投入しない。
 
-```
-# 品質検証の例
-Task ツールを呼び出し:
+### 実装
 
-subagent_type: general-purpose
-prompt: "実装したコードの型チェック・リント・潜在バグを検出し、問題があれば修正してください"
-```
+非競合の担当 path に分けて編集を並列化する。依存する変更は同じ agent に束ねるか、前段完了後に順次起動する。
 
----
+### 検証
 
-## 3. バックグラウンド実行
+read-only review と自動修正を同じ packet に混ぜない。まず finding を返させ、修正が許可された場合だけ別の実装 turn にする。
 
-長時間かかるタスクは `run_in_background: true` を指定する。
+### 長時間監視
 
-### バックグラウンド起動
+CI や build の待機は監視 agent 1体へ委譲し、停止条件、最大時間、報告形式を指定する。同じ対象への重複 poller を起動しない。
 
-```
-Task ツールを呼び出し:
+## 5. 共有 Git 状態を守る
 
-subagent_type: general-purpose
-prompt: "全テストスイートを実行してください"
-run_in_background: true
-```
+複数 agent が worktree / index / HEAD を共有する場合、編集だけを並列化し、commit phase は直列化する。
 
-### 結果の取得
+1. 起動時に「担当外編集禁止」「stage / commit 禁止」「owner GO を待つ」と伝える。
+2. 全 agent の編集完了後、司令塔が担当 path と diff を確認する。
+3. commit owner が1グループずつ GO を出す。
+4. 対象 path だけを明示的に `git add -- <paths>` する。`git add -A` / `git add .` は使わない。
+5. `git diff --cached --name-only` がそのグループだけであることを確認して commit する。
+6. 次のグループは前の commit 完了後に進める。
 
-```
-TaskOutput ツールを呼び出し:
+repo 指示が「各実装 agent が commit」を要求しても、共有 Git 状態では commit turn だけを1体ずつ再開する。agent ごとに独立 worktree と branch がある場合のみ並列 commit を許可する。
 
-task_id: [起動時に返されたID]
-block: false  # 完了を待たない場合
-```
+## 6. 統合する
 
-### 開発サーバーの起動
+- notification が届く前に結果を推測しない。
+- 各報告を担当 path、変更、検証、未解決事項へ対応づける。
+- 司令塔が diff と focused check を再確認する。
+- agent の主張と実測が矛盾したら、該当 agent を runtime adapter に従って再開する。
+- 全体検証は commit 直列化後、安定した HEAD で行う。
 
-ユーザーに動作確認させる場合：
+## 完了チェック
 
-```
-Bash ツールを呼び出し:
-
-command: "npm run dev"
-run_in_background: true
-```
-
----
-
-## 4. 注意事項
-
-### 競合の回避
-
-- **同一ファイルの同時編集禁止**: 複数エージェントが同じファイルを編集しない
-- **依存関係の考慮**: 依存するタスクは順次実行する
-- **フェーズの分離**: 調査→計画→実装→検証の順序を守る
-
-### エージェント間の連携
-
-- 各エージェントの完了を確認してから次フェーズへ進む
-- 調査結果は実装エージェントに適切に引き継ぐ
-- 検証で発見された問題は検証フェーズの `general-purpose` が自動修正
-
-### リソース管理
-
-- 同時起動するエージェント数は必要最小限に
-- バックグラウンドタスクは完了後に適切に処理
-- 不要なエージェントは起動しない
-
----
-
-## 5. 実行パターン例
-
-### パターンA: イシュー対応（フルフロー）
-
-```
-1. [並列調査]
-   - Explore: 既存実装の調査
-   - Explore: 関連するテストの調査
-   - Explore: ディレクトリ構造の確認
-
-2. [計画・レビュー]
-   - plan-digger: SOW作成と反復レビュー
-
-3. [並列実装]
-   - general-purpose: コア機能の実装
-   - general-purpose: テストの実装
-
-4. [検証・修正]
-   - general-purpose: 品質チェックと自動修正
-```
-
-### パターンB: バグ修正
-
-```
-1. [調査]
-   - Explore: バグの原因調査と関連コードの探索
-
-2. [実装]
-   - general-purpose: 修正の実装
-
-3. [検証]
-   - general-purpose: 修正の検証と品質チェック
-```
-
-### パターンC: リファクタリング
-
-```
-1. [並列調査]
-   - Explore: 対象コードの依存関係調査
-   - Explore: 影響範囲の調査
-
-2. [計画]
-   - plan-digger: リファクタリング計画のSOW作成
-
-3. [段階的実装]
-   - general-purpose: 段階1の実装
-   - [検証後]
-   - general-purpose: 段階2の実装
-
-4. [最終検証]
-   - general-purpose: 全体の品質チェックと修正
-```
-
-### パターンD: クイック修正
-
-```
-1. [実装]
-   - general-purpose: 修正の実装
-
-2. [検証]
-   - general-purpose: 品質チェック
-```
-
-### パターンE: プランレビュー Fan-out
-
-実装前の SOW や大きめの修正方針をレビューする場合は、`plan-digger` を司令塔として複数の読み取り専用レビューワーを並列起動する。レビューワーは `subagent_type: Explore` を使い、`Explore` が使えない環境では `timeout 1800 codex exec --sandbox read-only ...` へフォールバックする。
-
-```
-1. [入力パッケージ作成]
-   - 対象 repo / issue / plan / スコープ内ファイル / 除外範囲 / 保存要否を整理
-
-2. [並列レビュー]
-   - Explore / security reviewer: 認証認可、secret、injection、data exposure
-   - Explore / correctness reviewer: 状態遷移、edge case、例外系、競合、型・契約違反
-   - Explore / performance reviewer: hot path、I/O、再計算、メモリ、スケール劣化
-   - Explore / maintainability reviewer: 責務分離、重複、命名、過剰抽象化
-   - Explore / test reviewer: regression、validation command、テスト不能性
-   - Explore / devil's advocate reviewer: 前提、スコープ、実装順序、代替案
-
-3. [統合]
-   - plan-digger が重複排除、重大度調整、SOW 反映要否を判定
-   - High は解消必須、Medium は対応方針または受容理由を明記
-
-4. [最終確認]
-   - SOW を大きく変更した観点だけ再レビュー
-   - 最終 devil's advocate で evidence-backed な新規 High/Medium がなければ完了
-```
-
-軽量タスクでは security / correctness / test の 3 観点に縮退してよい。各レビューワーは編集、commit、PR 作成、テスト自動修正をしない。`general-purpose` は編集可能な agent なので reviewer として使わない。
-
----
-
-## チェックリスト
-
-### 並列実行前
-
-- [ ] タスク間の依存関係を確認した
-- [ ] 同一ファイルへの同時アクセスがないか確認した
-- [ ] 適切なサブエージェントを選択した
-
-### 各フェーズ完了時
-
-- [ ] 全エージェントの完了を確認した
-- [ ] 結果を次フェーズに適切に引き継いだ
-- [ ] エラーや問題がないか確認した
-
-### タスク完了時
-
-- [ ] 全フェーズが正常に完了した
-- [ ] バックグラウンドタスクを適切に処理した
-- [ ] 最終的な品質検証を実施した
+- [ ] runtime 固有 API を混在させていない
+- [ ] agent 数、担当 path、停止条件が明確
+- [ ] 同一ファイルを並列編集していない
+- [ ] 共有 Git の commit を owner GO 後に直列化した
+- [ ] 各差分と検証結果を司令塔が再確認した
+- [ ] 残課題と未実行 validation を明示した

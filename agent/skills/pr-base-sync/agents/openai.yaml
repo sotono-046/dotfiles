@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Base Sync"
+  short_description: "Safely merge the latest base into a PR branch"
+  default_prompt: "Use $pr-base-sync to verify a PR branch and merge its latest base branch safely."

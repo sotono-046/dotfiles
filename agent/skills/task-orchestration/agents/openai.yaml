@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Orchestration"
+  short_description: "Run independent subagent tasks across Codex and Claude"
+  default_prompt: "Use $task-orchestration to split this work into independent bounded subagent tasks."

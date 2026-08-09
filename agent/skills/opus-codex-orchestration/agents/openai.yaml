@@ -1,0 +1,4 @@
+interface:
+  display_name: "Opus Codex Orchestration"
+  short_description: "Coordinate Claude Opus with an external Codex operator"
+  default_prompt: "Use $opus-codex-orchestration in Claude Code to coordinate Opus planning and external Codex implementation."

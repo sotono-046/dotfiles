@@ -9,9 +9,10 @@ description: "コードベースの品質・セキュリティ・パフォーマ
 
 ## 前提
 
-- `codex` CLI が利用可能（`codex exec` で非対話実行する）
-- Task/Subagent 起動ツールが利用可能な環境では、`task-orchestration` の原則に従って複数レビューワーを並列起動する。専用 reviewer agent は増やさず、読み取り専用が確認できる `Explore` を観点別 prompt で使う。
-- `Explore` の公開 tool list に編集・書き込み・mutating Bash・外部投稿系 tool が含まれる、または権限を確認できない場合は、`codex exec -C "$TARGET_REPO" --sandbox read-only -` へフォールバックする。
+- in-process subagent を使える環境では、`task-orchestration` の runtime adapter に従って複数レビューワーを並列起動する。
+- Codex では `collaboration.spawn_agent` を使い、稼働中の補足は `collaboration.send_message`、turn 完了後の追加レビューは `collaboration.followup_task`、待機は `collaboration.wait_agent` を使う。
+- Claude Code では公開 schema の `Task` または `Agent` を使う。`Explore` subtype、`run_in_background`、`TaskOutput` は Claude Code 側で実在と read-only 制約を確認できる場合だけ使う。
+- in-process child の read-only を強制できない、または強い sandbox が必要な場合は、`codex exec -C "$TARGET_REPO" --sandbox read-only -` へフォールバックする。
 - レビュー実行は repo を `-C "$TARGET_REPO"` で固定し、prompt を stdin または prompt file から渡す。issue/plan 由来の未信頼テキストを shell 引数へ直接補間しない。
 - 長めのコードベース調査や反復レビューで早期終了しないよう、明示的な理由がない限り 30 分を既定タイムアウトにする。`timeout` がない環境では tool 側 timeout、macOS では `gtimeout`、または同等の上限設定を使う。
 - 旧 Claude CLI 手順は使用しない。過去の手順や既存プロンプトに残っている場合も `codex exec` に置き換える。
@@ -35,7 +36,8 @@ description: "コードベースの品質・セキュリティ・パフォーマ
 2. 複数レビューワー並列レビュー: `security` / `correctness` / `performance` / `maintainability` / `test` / `devil's advocate` を読み取り専用で起動する。ユーザーが指定した観点は必ず含める。軽量タスクで未指定なら `correctness` / `test` と、リスクに応じた 1 観点に縮退してよい。
    - security-sensitive、secret、権限境界、破壊的操作を含む場合は `security` を入れる。
    - docs、skill、command、設計整理が主対象なら `maintainability` を入れる。
-   - Task/Subagent では read-only が確認できる場合だけ `subagent_type: Explore` を使う。
+   - Codex collaboration agent には read-only、担当観点、scope、禁止操作を message に明記する。起動前後の worktree status を司令塔が確認する。
+   - Claude Code では read-only が確認できる場合だけ `subagent_type: Explore` を使う。
    - fallback では初手を 1 回の multi-perspective `codex exec`、または最大 `correctness` / `test` / `devil's advocate` + 必要観点に縮退する。フル 6 観点へ広げる前に見積もりと必要性を確認する。
 3. 統合: 指摘を重複排除し、重大度・根拠・confidence・SOW 反映要否を司令塔が判定する。レビューワー出力をそのまま貼らない。
 4. SOW 更新: High は解消方針を必須化し、Medium は対応方針または明示的な受容理由を記載する。Low は必要なものだけ注記する。
@@ -44,13 +46,25 @@ description: "コードベースの品質・セキュリティ・パフォーマ
 
 ### サブエージェントに渡す共通指示
 
-すべてのレビューワーは read-only で実行する。編集、commit、PR 作成、テスト自動修正は禁止する。`general-purpose`、`Research` など編集可能な agent を reviewer として使わない。
+すべてのレビューワーは read-only で実行する。編集、commit、PR 作成、テスト自動修正は禁止する。Claude Code では `general-purpose`、`Research` など編集可能な subtype を reviewer として使わない。Codex collaboration agent は明示的な read-only packet と前後の status 検証を必須にし、それでは境界が弱い場合は `codex exec --sandbox read-only` へ切り替える。
 
-Task/Subagent で起動する場合:
+Codex で起動する場合:
 
 ```text
-subagent_type: Explore
-prompt: "<共通指示> role=<観点> reviewer ..."
+collaboration.spawn_agent:
+  task_name: "review_<観点>"
+  message: "<共通指示> role=<観点> reviewer ..."
+```
+
+実行中の補足は `collaboration.send_message`、完了 turn の再レビューは `collaboration.followup_task`、回収待ちは `collaboration.wait_agent` を使う。
+
+Claude Code で起動する場合:
+
+```text
+Task または Agent:
+  subagent_type: Explore
+  prompt: "<共通指示> role=<観点> reviewer ..."
+  run_in_background: true  # schema が対応する場合だけ
 ```
 
 `codex exec` で起動する場合は必ず repo を `-C` で固定し、`--sandbox read-only` を付ける。詳細な prompt template と fallback command は `references/reviewer-prompts.md` を参照する。
@@ -133,5 +147,5 @@ High が 0、Medium が対応または受容済み、採用した指摘に根拠
 - `codex exec --help` で `-C/--cd` と `--sandbox read-only` が存在することを確認
 - `SKILL.md` の YAML frontmatter が parse できることを確認
 - Markdown を目視し、見出し、コードブロック、参照先が壊れていないことを確認
-- `rg` で旧式の fallback command、環境固定の質問ツール名、保存モード既定、編集可能 reviewer 名などが `agent/agents/plan-digger.md` と drift していないか確認
+- `rg` で provider 固有 API が正しい adapter 内だけにあり、旧式 fallback、環境固定の質問ツール名、保存モード既定、編集可能 reviewer 名などが `agent/agents/plan-digger.md` と drift していないか確認
 - `レビューだけして`、`SOW作って`、`保存して`、`role=maintainability reviewer`、同一 issue family 再発の 5 シナリオで、mode 判定、read-only 契約、ユーザー確認、escalation が期待どおりか確認

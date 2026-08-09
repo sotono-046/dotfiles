@@ -41,7 +41,7 @@ PR URL/番号が指定されていない場合は、文脈から PR を一意に
 5. 候補を 1 件に絞れたら、必要に応じて `gh pr view <PR> --json number,url,state,headRefName,headRefOid,headRepository,headRepositoryOwner,isCrossRepository,baseRefName,isDraft` で詳細を確認する。`gh pr view` 引数なしの暗黙解決だけで複数候補チェックを省略しない。
 6. `gh pr list --head` は branch 名だけの一致なので、候補の `headRepositoryOwner` / `headRepository` / `isCrossRepository` / `headRefOid` と、local upstream / remote / commit が食い違う場合は一意扱いせず停止する。
 7. 候補が 1 件かつ local checkout と PR head の対応が説明できる場合だけ監視対象にする。複数候補、detached HEAD で SHA 検索も外れた、PR 未作成などで一意に決まらない場合は、自動検知で試したコマンドと結果を短く示したうえで PR 番号/URL/head branch の指定をユーザーに求めて停止する。ローカル未コミット差分を PR の代替として監視しない。
-8. PR を解決した後、修正・commit・push・branch update・Resolve・ready・merge などの状態変更に進む前に `git status --short --branch` と PR の `headRefOid` を見る。dirty / ahead / diverged / head mismatch があれば、PR head と操作対象を揃えるまで停止する。
+8. PR を解決した後、状態変更へ進むたびに後述の「Mutation preflight」を実行する。最初に取得した `headRefOid`、check SHA、local status を後続操作へ使い回さない。
 9. PR が closed / merged の場合は原則停止する。続行する場合も CI/log/history の read-only 確認に限定し、修正・Resolve・ready・merge には進まない。
 
 ## 状態変更ゲート
@@ -54,6 +54,18 @@ PR URL/番号が指定されていない場合は、文脈から PR を一意に
 - `readyにして`: checks とレビュー回収後に ready 化する。merge はしない
 - `マージまで` / `mergeまで` / `mergeして` / `マージまでしておいて`: merge 条件を満たしたうえで merge する
 
+### Mutation preflight
+
+push、CI rerun、review reply / Resolve、ready 化、merge、branch deletion など、GitHub または remote の状態を変える各操作の**直前**に次を fresh に再取得する。1 回の preflight で複数 mutation をまとめて許可しない。
+
+- local の `git status --short --branch`、current branch、HEAD、upstream
+- PR の current `headRefOid`、head branch、state、draft 状態
+- 判断根拠に使う check / run の head SHA、status、conclusion。run id がある場合は `gh run view <RUN_ID> --json headSha,status,conclusion` 等で SHA を再固定する
+
+Resolve / ready / merge など push 以外の mutation は、local worktree が clean、local HEAD と PR `headRefOid` が一致し、利用する check SHA も同じ `headRefOid` を指す場合だけ進める。required check が存在しない場合は「none」と記録し、古い SHA の green を代用しない。PR head の変化、dirty / diverged、pending または取得不能な check evidence があれば停止して再監視する。
+
+push では local HEAD が current PR head より先行してよいが、worktree が clean、branch / upstream が対象 PR と一致し、remote の current `headRefOid` が記録した push 前 SHA から変わっていないことを必須にする。push 後は新しい `headRefOid` を再固定し、それ以前の check 結果を無効として再監視する。
+
 ## 併用する Skill
 
 - commit / push / PR 操作は `git-ops` のルールを優先する
@@ -62,7 +74,7 @@ PR URL/番号が指定されていない場合は、文脈から PR を一意に
 
 ## サブエージェント委譲
 
-CI 監視・ログ取得・レビュー回収は **必ずサブエージェント（Agent tool、subagent_type=general-purpose または Explore）に委譲する**。司令塔が `gh pr checks --watch` を直接抱え込むと、long-polling と大量ログでコンテキストを潰す。
+CI 監視・ログ取得・レビュー回収はサブエージェントへ委譲する。司令塔が `gh pr checks --watch` の long-polling や大量ログを抱えない。tool の起動・追送・待機は `$task-orchestration` の runtime adapter を使い、Claude Code の API を Codex で generic tool として扱わない。
 
 ### 役割分担
 
@@ -73,11 +85,28 @@ CI 監視・ログ取得・レビュー回収は **必ずサブエージェン�
 
 ### 起動方針
 
-- 司令塔は `Agent` ツールで上記サブエージェントを起動し、各サブエージェントには「監視対象 PR 番号」「リポジトリ」「報告フォーマット（短く構造化）」「停止条件」を明示して渡す
+- 各サブエージェントには「監視対象 PR 番号」「リポジトリ」「read-only 制約」「報告フォーマット」「最大待機時間」「停止条件」を明示して渡す
 - 並列化条件: 失敗 check が複数あり、ログ調査が独立しているなら、ログ調査サブエージェントをファイル非競合グループで並列起動してよい
 - 監視サブエージェントは 1 PR につき 1 つに絞る。`--watch` の重複起動は避ける
 - サブエージェントは状態変更（commit / push / Resolve / ready / merge）を行わない。司令塔だけが行う
 - サブエージェントの報告は 1 ターンあたり 500 トークン以下を目安にし、生ログの貼り付けは禁止
+
+### Codex adapter
+
+- `collaboration.spawn_agent` で監視・ログ調査・レビュー回収 agent を起動する。
+- 実行中 agent へ停止条件や追加 run id を追送する場合は `collaboration.send_message` を使う。
+- idle / turn 完了済み agent に追加調査を依頼する場合は `collaboration.followup_task` を使う。
+- 状態は `collaboration.list_agents`、mailbox update は `collaboration.wait_agent` で待つ。timeout だけを失敗と扱わない。
+- Codex の呼び出しに `run_in_background`、`TaskOutput`、`subagent_type` を渡さない。
+
+### Claude Code adapter
+
+- 公開 schema の `Task` または `Agent` で agent を起動する。
+- schema が対応している場合だけ `run_in_background` と `TaskOutput` を使う。
+- `Explore` / `general-purpose` などの `subagent_type` は実在と権限を確認してから使う。
+- Claude Code 固有の tool / model 名を Codex adapter へコピーしない。
+
+修正 agent を別途起動する場合、共有 worktree / index / HEAD では編集だけを非競合 path へ並列化し、stage / commit は owner GO 後に1グループずつ直列化する。対象 path の明示 staging と `git diff --cached --name-only` 確認を必須にする。
 
 ### 監視コマンド（サブエージェントが使う）
 

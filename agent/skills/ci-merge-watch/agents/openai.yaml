@@ -1,0 +1,4 @@
+interface:
+  display_name: "CI Merge Watch"
+  short_description: "Monitor PR checks, reviews, and merge readiness"
+  default_prompt: "Use $ci-merge-watch to monitor this PR and stop at the authorized state-change gate."

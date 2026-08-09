@@ -1,11 +1,20 @@
 ---
 name: opus-codex-orchestration
-description: "Opus を司令塔（意図・本質の把握とレビュー役）、Codex をオペレーター（プラン立案と実装の漏れなき実行）とする多重下請け開発オーケストレーション。大きめの開発・機能追加・リファクタリングで、Opus が手を動かしすぎて手戻りが増えるのを避けたいとき、または Codex の実装が本質を外していないか検証したいときに使う。「Opus と Codex で」「Codex に実装させて」「下請け構造で」などで起動。"
+description: "Claude Code の Opus を司令塔、外部 Codex を実装オペレーターにする provider-specific workflow。Claude Code 上で大きめの開発を「Opus と Codex で」「Codex に実装させて」「下請け構造で」と依頼されたときに使用する。Codex session ではこの tool 手順を使わず、同一 session の協調は subagent-team、外部 Claude / Codex pane の統括は herdr へ route する。"
 ---
 
 # Opus × Codex オーケストレーション
 
 大きな開発を **人間 ←→ Opus ←→ Codex** の多重下請け構造で進める。Opus（このセッション）は司令塔として意図と本質を握り、実装の詳細は Codex に委譲する。
+
+## Runtime gate
+
+この skill は **Claude Code の Opus session 専用**。最初に現在の runtime を確認する。
+
+- Claude Code / Opus: 以下の MCP / CLI workflow を使う。
+- Codex session で同一 session 内の役割分担を行う: `$subagent-team` を使う。
+- Codex session から実際の Claude / Codex pane を統括する: `$herdr` を使う。
+- Codex の `collaboration.spawn_agent` を Claude Opus や外部 Codex MCP の代替として扱わない。
 
 ## 設計思想
 
@@ -26,9 +35,9 @@ description: "Opus を司令塔（意図・本質の把握とレビュー役）�
 
 - Codex は次のいずれかで起動する。
   - **MCP**: `mcp__codex__codex`（新規セッション開始）/ `mcp__codex__codex-reply`（同一セッション継続）。マルチターンで文脈を引き継ぎたいときはこちら。
-  - **CLI**: `timeout 1800 codex exec '<プロンプト>'`（非対話・単発）。長い調査や実装で早期終了しないよう 30 分タイムアウトを既定にする。
+  - **CLI**: prompt file または安全な stdin を使い、`timeout 1800 codex exec -C "$TARGET_REPO" - < /path/to/prompt.txt` とする。未信頼テキストを shell 引数へ直接補間しない。
 - Opus はコードベースの理解に Serena（`get_symbols_overview` / `find_symbol` など）を優先し、ファイル全体の読み込みを避ける。
-- 重い実装は `run_in_background` で投げ、`TaskOutput` で回収してもよい。
+- Claude Code の execution schema が対応する場合に限り、重い CLI 実行を `run_in_background` で投げ、`TaskOutput` で回収してよい。これらを provider-neutral API として扱わない。
 
 ## ワークフロー
 
@@ -87,7 +96,7 @@ mcp__codex__codex-reply を呼び出し（同一セッション継続）:
     プランの範囲を超える変更は行わず、逸脱する場合は理由を述べてから行ってください。
 ```
 
-長時間になる実装は `timeout 1800 codex exec` をバックグラウンドで起動して回収する手もある。
+長時間になる実装は、Claude Code 側の background execution が使える場合に `timeout 1800 codex exec` を起動して回収する手もある。
 
 ### フェーズ4: 本質レビュー & 検証（Opus）
 
@@ -98,7 +107,7 @@ Codex の実装差分を Opus がレビューする。ここでも Opus は「�
 - プラン外の予期せぬ変更がないか
 - 明らかなバグ・抜けがないか
 
-問題があればフェーズ3に差し戻し（`codex-reply`）。品質・型・リントの機械的検証は `general-purpose` サブエージェントに任せてもよい。移行・リファクタなどで「挙動が変わっていないか」を確かめる振る舞い等価性の検証（旧新の出力をゴールデン比較するなど）は `simulation-quality-loop` skill に委譲してもよい。
+問題があればフェーズ3に差し戻す（`codex-reply`）。品質・型・リントの機械的検証は、Claude Code で公開されている `Task` / `Agent` の実在する subtype に任せてもよい。
 
 ### フェーズ5: 人間への報告（Opus）
 
@@ -118,8 +127,8 @@ Codex の実装差分を Opus がレビューする。ここでも Opus は「�
 | 状況 | 使う |
 | ---- | ---- |
 | プラン → レビュー → 実装と文脈を引き継ぎたい | `mcp__codex__codex` → `mcp__codex__codex-reply` |
-| 単発の調査・プラン生成 | `timeout 1800 codex exec '<prompt>'` |
-| 長時間の実装・全テスト実行 | `timeout 1800 codex exec` を `run_in_background` で起動し `TaskOutput` で回収 |
+| 単発の調査・プラン生成 | prompt file を stdin で渡す `timeout 1800 codex exec -C "$TARGET_REPO" -` |
+| 長時間の実装・全テスト実行 | Claude Code の execution schema が対応するときだけ `run_in_background` / `TaskOutput` を使う |
 
 **競合時の優先規則**: 「長時間の実装」と「差し戻しでの文脈引き継ぎ」が同時に必要な場合（例: バックグラウンド実装の差分をレビューして再実装させたい）、文脈引き継ぎを優先して MCP セッション（`codex-reply`）を使う。文脈が薄く再起動しても困らないなら `codex exec` + background で構わない。判断軸は「前回の文脈を失うと差し戻しが成立しないか」。
 
@@ -144,7 +153,7 @@ Codex の実装差分を Opus がレビューする。ここでも Opus は「�
 - [ ] `git diff` で全変更を確認した
 - [ ] ゴールを満たし、本質を外していないか確認した
 - [ ] プラン外の変更がないか確認した
-- [ ] 機械的品質検証（型・リント）を実施または `general-purpose` に委譲した
+- [ ] 機械的品質検証（型・リント）を実施したか、runtime で実在と必要権限を確認した validation agent に委譲した
 
 ### 完了時
 
