@@ -1,0 +1,4 @@
+interface:
+  display_name: "Subagent Team"
+  short_description: "Codex / Claude Codeで常駐サブエージェントを統括"
+  default_prompt: "Use $subagent-team to coordinate a persistent strategist and implementers across multiple review turns."
