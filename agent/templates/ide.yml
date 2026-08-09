@@ -6,7 +6,7 @@ rows:
   - size: 70%
     panes:
       - title: Claude
-        command: claude --model fable
+        command: claude
       - title: Codex
         command: codex
   - panes:

@@ -2,10 +2,6 @@
 # worktree ごとに 4 分割の tmux session を作り、Claude / Codex / dev server を立ち上げる。
 # 依存: zsh/repo.zsh の _select_repo_or_worktree
 
-export CLAUDE_MODEL_MAIN="claude-opus-4-7[1m]"
-export CLAUDE_MODEL_SUB="claude-sonnet-4-6"
-export CODEX_MODEL="gpt-5.5"
-
 # tmux session 名として安全な短い worktree 識別子を作る内部関数
 _tmux_worktree_session_name() {
     local repo_path="$1"
@@ -46,20 +42,20 @@ _launch_tmux_ide_or_init() {
         shell_pane=$(tmux split-window -v -P -F '#{pane_id}' -t "$claude_pane" -c "$repo_path" "exec zsh") || return 1
         dev_pane=$(tmux split-window -v -P -F '#{pane_id}' -t "$codex_pane" -c "$repo_path" "exec zsh") || return 1
 
-        # 配置: [1 opus][2 codex] / [3 haiku][4 dev]
+        # 配置: [1 Claude Main][2 Codex] / [3 Claude Subagent][4 Dev]
         # tiled は pane index 順に並べ替えるため使わない（index 2=左下, 3=右上 になり逆転する）
-        tmux select-pane -t "$claude_pane" -T "Claude --model $CLAUDE_MODEL_MAIN"
-        tmux select-pane -t "$codex_pane" -T "Codex --model $CODEX_MODEL"
-        tmux select-pane -t "$shell_pane" -T "claude --model $CLAUDE_MODEL_SUB"
+        tmux select-pane -t "$claude_pane" -T "Claude Main"
+        tmux select-pane -t "$codex_pane" -T "Codex"
+        tmux select-pane -t "$shell_pane" -T "Claude Subagent"
         tmux select-pane -t "$dev_pane" -T "Dev Server"
 
         tmux select-pane -t "$claude_pane"
 
-        tmux send-keys -t "$claude_pane" -l -- "claude --model '${CLAUDE_MODEL_MAIN}'"
+        tmux send-keys -t "$claude_pane" -l -- "claude"
         tmux send-keys -t "$claude_pane" Enter
-        tmux send-keys -t "$codex_pane" -l -- "codex --model ${CODEX_MODEL}"
+        tmux send-keys -t "$codex_pane" -l -- "codex"
         tmux send-keys -t "$codex_pane" Enter
-        tmux send-keys -t "$shell_pane" -l -- "claude --model '${CLAUDE_MODEL_SUB}'"
+        tmux send-keys -t "$shell_pane" -l -- "claude"
         tmux send-keys -t "$shell_pane" Enter
         tmux send-keys -t "$dev_pane" -l -- "$dev_command"
         tmux send-keys -t "$dev_pane" Enter

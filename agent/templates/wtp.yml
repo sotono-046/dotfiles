@@ -8,28 +8,50 @@ hooks:
     - type: command
       command: |
         # Get the original repository path (parent of worktree)
-        ORIGINAL_REPO=$(git -C "$(git rev-parse --git-dir)" worktree list | grep -v "$PWD" | head -1 | awk '{print $1}')
-
-
-        # COPY .ENV.KEYS
-        if [[ -f "${ORIGINAL_REPO}/.env.keys" ]]; then
-          cp -f "${ORIGINAL_REPO}/.env.keys" .env.keys
+        CURRENT_WORKTREE=$(pwd -P 2>/dev/null) || CURRENT_WORKTREE=""
+        ORIGINAL_REPO=""
+        if [ -n "${CURRENT_WORKTREE}" ]; then
+          ORIGINAL_REPO=$(
+            git worktree list --porcelain 2>/dev/null |
+              awk -v current="${CURRENT_WORKTREE}" '
+                /^worktree / {
+                  path = substr($0, 10)
+                  if (path != current) {
+                    print path
+                    exit
+                  }
+                }
+              '
+          )
         fi
 
-        # .TEMP
-        if [[ -e "${ORIGINAL_REPO}/.temp" ]]; then
-          ln -sf "${ORIGINAL_REPO}/.temp" .temp
-        fi
+        if [ -z "${ORIGINAL_REPO}" ] || [ ! -d "${ORIGINAL_REPO}" ]; then
+          echo "Skipped original repository setup: another worktree was not found"
+        else
+          # .TEMP
+          if [ -e "${ORIGINAL_REPO}/.temp" ]; then
+            ln -sf "${ORIGINAL_REPO}/.temp" .temp
+            echo "Linked .temp from original repository"
+          fi
 
-        # IDE.YML
-        if [[ -f "${ORIGINAL_REPO}/ide.yml" ]]; then
-          cp -f "${ORIGINAL_REPO}/ide.yml" ide.yml
+          # IDE.YML
+          if [ -f "${ORIGINAL_REPO}/ide.yml" ]; then
+            cp -f "${ORIGINAL_REPO}/ide.yml" ide.yml
+            echo "Copied ide.yml from original repository"
+          fi
         fi
-
-        echo "Copied app .env.keys files, ide.yml, and created symlinks from original repository"
 
     - type: command
-      command: bun install
+      command: |
+        if [ "${WTP_INSTALL_DEPS:-0}" = "1" ]; then
+          if ! command -v bun >/dev/null 2>&1; then
+            echo "WTP_INSTALL_DEPS=1, but bun is not available"
+            exit 1
+          fi
+          bun install
+        else
+          echo "Skipped bun install (set WTP_INSTALL_DEPS=1 to enable)"
+        fi
 
     - type: command
       command: echo "Created new worktree!"
