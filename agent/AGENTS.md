@@ -12,22 +12,29 @@ Think in English, interact with the user in Japanese.
 
 ### Serena（コード解析・編集）
 
-コードベースの理解・編集には Serena を最優先で使用する。ファイル全体を読むのではなく、シンボル単位で必要な情報だけを取得し、トークン効率を常に意識する。
+Serena を一律の first choice にしない。次の条件をすべて満たす場合に使用する。
+
+- 対象が Serena の language backend で解析できるソースコードである
+- シンボルの同一性・構造・参照関係など、テキスト検索だけでは曖昧になる semantic 情報が必要である
+- `rg` / ファイル読み取り / 通常の編集より、探索手順の削減または複数箇所の更新漏れ防止が見込める
+
+設定ファイル、ドキュメント、shell script、free-text・path 検索、ファイル一覧、Git・build・test 操作、小さな局所編集では Serena を使わず、`rg` と標準の読み取り・編集ツールを使用する。Serena が利用できない、project が未初期化、または language server の準備コストが利益を上回る場合は、復旧に固執せず標準ツールへフォールバックする。
 
 - `get_symbols_overview`: ファイルの構造を把握する最初のステップ
 - `find_symbol`: シンボル（クラス・関数・メソッド）を検索・取得
 - `find_referencing_symbols`: シンボルの参照箇所を特定
-- `replace_symbol_body`: シンボル単位での精密な編集
-- `insert_before_symbol` / `insert_after_symbol`: 新しいコードの挿入
-- `search_for_pattern`: 柔軟なパターン検索
+- `replace_symbol_body`: シンボル全体の置換で境界の精密さが必要な場合に使用
+- `insert_before_symbol` / `insert_after_symbol`: シンボルを基準に挿入位置を安定させたい場合に使用
 
 ### 判断基準
 
-| 状況                         | 使用するツール                                 |
-| ---------------------------- | ---------------------------------------------- |
-| コードの構造を理解したい     | Serena (`get_symbols_overview`, `find_symbol`) |
-| 特定のシンボルを編集したい   | Serena (`replace_symbol_body`)                 |
-| 参照箇所を調べたい           | Serena (`find_referencing_symbols`)            |
+| 状況                                         | 使用するツール                                      |
+| -------------------------------------------- | --------------------------------------------------- |
+| 大きなコードファイルの構造や対象 symbol を取得 | Serena (`get_symbols_overview`, `find_symbol`)      |
+| code usage・実装・継承関係を意味的に調べる     | Serena (`find_referencing_symbols` など)            |
+| 複数ファイルにまたがる semantic refactor       | Serena の symbol 編集・refactor tool                |
+| free-text・設定値・path・ファイル一覧を探す     | `rg` / `rg --files`                                 |
+| config・docs・shell・小さな局所編集             | 標準の読み取り・編集ツール                          |
 
 ## 公式ドキュメントを一次情報にする
 
@@ -114,7 +121,7 @@ Think in English, interact with the user in Japanese.
 レビュー指摘の一括修正など、独立した修正タスクを並列でこなす場合は、**指摘をファイル非競合のグループに束ね、グループ数分のサブエージェントを並列起動し、各サブエージェントが担当分を自分でコード修正してコミットする**。Codex 等への委譲はしない。
 
 - 司令塔（発動エージェント）→ 修正サブエージェント（並列）の2層で進める。司令塔はレビュー・グルーピング・ループ判定に専念し、1グループ・軽量なら自分で直接修正してよい。
-- 各修正サブエージェントは「担当ファイル以外を編集しない」「割り当て指摘のみ修正」「担当分を1コミット（`git add -A` 禁止）」を担う。編集は Serena 優先（上記 MCP 節）。
+- 各修正サブエージェントは「担当ファイル以外を編集しない」「割り当て指摘のみ修正」「担当分を1コミット（`git add -A` 禁止）」を担う。編集ツールは上記 MCP 節の判断基準に従い、semantic refactor の条件を満たす場合だけ Serena を使用する。
 - 競合回避（同一ファイルの同時編集禁止）は `task-orchestration` の原則どおり、グループ間でファイル集合が重ならないよう束ねてから並列起動する。強い依存がある指摘はファイルが重ならなくても同一グループに束ね、グループ内で順次対応する。
 - PR のレビュー指摘対応では `/code-review` を基準に、対応すべき指摘がゼロになるまでフェーズ1（レビュー）→フェーズ2（グルーピング）→フェーズ3（並列修正）→フェーズ4（コミット確認）を周回する。最大3周してもスコア80以上の指摘が残る場合はユーザーにエスカレートする。
 
