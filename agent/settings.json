@@ -22,10 +22,7 @@
       "mcp__serena__find_referencing_symbols",
       "mcp__serena__think_about_whether_you_are_done",
       "mcp__serena__think_about_collected_information",
-      "Skill(skill-creator)"
-    ],
-    "deny": [],
-    "ask": [
+      "Skill(skill-creator)",
       "Bash(git push *)",
       "Bash(git push)",
       "Bash(git clean *)",
@@ -48,7 +45,10 @@
       "Bash(firebase deploy *)",
       "Bash(firebase deploy)",
       "Bash(pnpm deploy *)",
-      "Bash(pnpm deploy)",
+      "Bash(pnpm deploy)"
+    ],
+    "deny": [],
+    "ask": [
       "Bash(sudo *)",
       "Bash(sudo)"
     ],
