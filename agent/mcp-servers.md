@@ -4,12 +4,12 @@ Claude Code / Codex の MCP サーバー設定は `~/.claude.json`（user scope�
 
 ## Claude Code（`~/.claude.json` の `mcpServers`）
 
-| サーバー | transport | 用途 |
-|---|---|---|
-| `codex` | stdio (`codex mcp-server`) | Codex CLI を MCP 経由で呼び出す |
-| `pencil` | stdio (`Pencil.app` 同梱バイナリ `--app desktop`) | .pen ファイルのデザイン編集 |
-| `discord-ops` | SSE（**非推奨 transport**。Tailscale IP 経由） | Discord 通知・スレッド管理 |
-| `serena` | stdio (`uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project "$PWD"`) | コードベースのシンボル単位解析・編集 |
+| サーバー      | transport                                                                                                                  | 用途                                 |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `codex`       | stdio (`codex mcp-server`)                                                                                                 | Codex CLI を MCP 経由で呼び出す      |
+| `pencil`      | stdio (`Pencil.app` 同梱バイナリ `--app desktop`)                                                                          | .pen ファイルのデザイン編集          |
+| `discord-ops` | SSE（**非推奨 transport**。Tailscale IP 経由）                                                                             | Discord 通知・スレッド管理           |
+| `serena`      | stdio (`uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project "$PWD"`) | コードベースのシンボル単位解析・編集 |
 
 ### 再構築コマンド
 
