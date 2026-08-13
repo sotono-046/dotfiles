@@ -106,9 +106,11 @@ prompt は `references/reviewer-prompts.md` の input package block を先頭に
 
 ## 承認基準
 
-- High: 0 件必須
-- Medium: 対応方針または受容理由を SOW に明記。重要フロー、security、data loss、破壊的操作に関わる Medium はユーザー判断を挟む。
-- Low: 任意（注記のみ）
+blocker 判定の正本は `$review-go-nogo`。
+
+- High: 0 件必須（既定 NO-GO）
+- Medium: 対応方針または受容理由を SOW に明記。重要フロー、security、data loss、破壊的操作に関わる Medium は NO-GO またはユーザー判断。その他の Medium は GO-follow-up
+- Low: 任意（注記のみ）。GO-follow-up であり修正ループの継続理由にしない
 
 ## 調査
 

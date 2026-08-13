@@ -171,7 +171,7 @@ herdr pane split --current --direction right --no-focus
 ```zsh
 herdr pane rename <returned-pane-id> "reviewer"
 herdr agent start reviewer --kind codex --pane <returned-pane-id> -- -m <model> -c model_reasoning_effort=high
-herdr agent prompt <returned-pane-id> "現在の差分をレビューし、actionable な指摘だけ報告してください。" --wait
+herdr agent prompt <returned-pane-id> "現在の差分を $review-go-nogo の基準でレビューしてください。NO-GO は再現可能な P0/P1 の実害だけ。P2 以下は follow-up。編集しないでください。" --wait
 ```
 
 agent の起動コマンドへ task を argv として混ぜない。interactive agent が `idle` になった後、task を `agent prompt` で送る。

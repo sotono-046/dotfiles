@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review GO / NO-GO"
+  short_description: "Block reviews only on reproducible P0/P1 harm; keep P2 as follow-up"
+  default_prompt: "Use $review-go-nogo to classify review findings. NO-GO is reproducible P0/P1 harm only; P2 and nits are follow-up and must not extend the fix loop."

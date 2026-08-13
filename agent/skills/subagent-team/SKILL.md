@@ -79,6 +79,7 @@ tool の実在と引数は、その session に表示された schema を正と�
 - read-only 範囲
 - 公式一次情報で裏どりし、URL と未確認事項を分ける指示
 - 司令塔の実測と矛盾する場合に指摘する指示
+- レビュー判定は `$review-go-nogo`。NO-GO 以外で差し戻さない
 
 実装役には次を必ず渡す。
 
@@ -106,7 +107,7 @@ spawn_agent:
 - 進捗確認は「確定した項目だけ先に共有」のように具体化し、「どう思う？」だけを送らない。
 - 返信前に内容を推測しない。待つ間は司令塔が実測・diff review・別タスクを進める。
 - 参謀の主張を鵜呑みにせず、低コストな根拠は司令塔が再検証する。
-- 実装成果は diff review、focused check、隣接互換チェックの順で検証する。
+- 実装成果は diff review、focused check、隣接互換チェックの順で検証する。diff review の blocker は `$review-go-nogo` の NO-GO のみ。
 - 差し戻しは対象 agent を同じ名前で再開し、ファイルと acceptance criteria を明記する。
 
 ## 6. 完了条件

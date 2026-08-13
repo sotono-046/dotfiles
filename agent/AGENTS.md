@@ -57,7 +57,8 @@ Serena を一律の first choice にしない。次の条件をすべて満た�
 1. `git-ops`: commit / PR 作成など、履歴やリモート状態に影響する Git 操作では必ず参照する（`git status` / `git diff` などの読み取りのみの場合は不要）
 2. `task-orchestration`: 独立性が高く成果物が重複しないサブタスクに限り並列化する。条件を満たせばサブエージェントを多数（10〜20 個規模でも）同時起動してよいが、過剰起動・重複作業・コスト増を避けるため必要最小限の数にとどめる
 3. `agent-note-writing`: Obsidian 保存、SOW、Issue 下書き、調査メモ、運用ルールなど後で再利用するドキュメントを書くときは必ず参照する。`保存して`、`メモして`、`記録して`、`SOW作って`、`Issue下書き`、`ドキュメント化` で使用し、repo 作業では project / repository / branch を frontmatter と本文に明記する。外部 Issue/PR/共有 Doc の作成は明示指示があるまで下書き、または該当 Skill/tool への引き継ぎで止める
-4. `fairy-tale`: 以下のいずれかに当てはまるタスクでは、作業開始前に `fairy-tale` スキルを読み、Glass Slipper Gate（予算: 最大サブタスク数 / ファイル数 / web 検索数 / tool call 数 / 経過時間）と Implementation Validation Gate（focused check + 隣接互換チェック + validation ledger）を適用する。description マッチを待たず、条件に該当した時点で能動的にロードする。
+4. `review-go-nogo`: レビュー判定、Sol High へのレビュー依頼、修正ループの継続 / 打ち切りでは必ず参照する。NO-GO は再現可能な実害だけ。P2 でループを延ばさない
+5. `fairy-tale`: 以下のいずれかに当てはまるタスクでは、作業開始前に `fairy-tale` スキルを読み、Glass Slipper Gate（予算: 最大サブタスク数 / ファイル数 / web 検索数 / tool call 数 / 経過時間）と Implementation Validation Gate（focused check + 隣接互換チェック + validation ledger）を適用する。description マッチを待たず、条件に該当した時点で能動的にロードする。
    - 長時間コーディング / コードベース横断のリファクタリング・移行（Fable Harness）
    - 多エージェント fan-out、長い autonomous run、context resume を伴う作業
    - 防御目的のセキュリティレビュー（Mythos / Cyber Frontier Defense Harness、OWASP LLM 含む）
@@ -65,7 +66,7 @@ Serena を一律の first choice にしない。次の条件をすべて満た�
    - SWE-Bench Pro / ExploitBench などのベンチマーク再現・フィードバック適用
    - 同じ失敗が 3 回以上繰り返される、または validation ledger を作れないとき（Fairy Fusion 自動発火条件）
    - 小規模な単発タスク・対話・ドキュメント執筆のみの作業では適用しない（過剰になるため）
-5. `apple-container`: Apple の `container` CLI、`apple/container`、Apple Container の導入・起動・build/run・image/volume/machine・容量管理・Docker からの移行を扱うときは、作業開始前に必ず参照する。2 GiB の soft budget、`--rm`、volume の明示サイズ、破壊操作前の一覧化、`brew services` の再起動ループ防止を適用する。一般的なコンテナ概念や Docker のみの作業では使用しない。
+6. `apple-container`: Apple の `container` CLI、`apple/container`、Apple Container の導入・起動・build/run・image/volume/machine・容量管理・Docker からの移行を扱うときは、作業開始前に必ず参照する。2 GiB の soft budget、`--rm`、volume の明示サイズ、破壊操作前の一覧化、`brew services` の再起動ループ防止を適用する。一般的なコンテナ概念や Docker のみの作業では使用しない。
 
 ### 使い分け
 
@@ -123,7 +124,7 @@ Serena を一律の first choice にしない。次の条件をすべて満た�
 - 司令塔（発動エージェント）→ 修正サブエージェント（並列）の2層で進める。司令塔はレビュー・グルーピング・ループ判定に専念し、1グループ・軽量なら自分で直接修正してよい。
 - 各修正サブエージェントは「担当ファイル以外を編集しない」「割り当て指摘のみ修正」「担当分を1コミット（`git add -A` 禁止）」を担う。編集ツールは上記 MCP 節の判断基準に従い、semantic refactor の条件を満たす場合だけ Serena を使用する。
 - 競合回避（同一ファイルの同時編集禁止）は `task-orchestration` の原則どおり、グループ間でファイル集合が重ならないよう束ねてから並列起動する。強い依存がある指摘はファイルが重ならなくても同一グループに束ね、グループ内で順次対応する。
-- PR のレビュー指摘対応では `/code-review` を基準に、対応すべき指摘がゼロになるまでフェーズ1（レビュー）→フェーズ2（グルーピング）→フェーズ3（並列修正）→フェーズ4（コミット確認）を周回する。最大3周してもスコア80以上の指摘が残る場合はユーザーにエスカレートする。
+- PR のレビュー指摘対応では `/code-review` を基準に、指摘を `$review-go-nogo` で class 分けしてからフェーズ1（レビュー）→フェーズ2（グルーピング）→フェーズ3（並列修正）→フェーズ4（コミット確認）を周回する。修正ループに乗せるのは NO-GO のみ。P2 以下は follow-up として残し、ゼロになるまで回さない。最大3周しても NO-GO が残る場合はユーザーにエスカレートする。
 
 大規模な機能開発・リファクタリングで Codex 下請けを使う場合は、`agent/CLAUDE.md` と `opus-codex-orchestration` スキルに従う（並列レビュー修正とは別経路）。
 

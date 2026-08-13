@@ -99,7 +99,7 @@ Stages:
 1. Supervisor が SPEC、正本データ、QUALITY、DESIGN、QA command を固定する。
 2. Commander が file 非競合 task に分割する。
 3. Implementer が各 task を実装し focused check を返す。
-4. Commander が一次 review と blocker fix-loop を回す。
+4. Commander が一次 review と `$review-go-nogo` の NO-GO だけを対象にした blocker fix-loop を回す。
 5. Supervisor が差分、validation、完成条件を採点する。
 
 ## P-B 直行スペシャリスト
@@ -183,7 +183,7 @@ Stages:
 1. Supervisor が対象 SHA、rubric、acceptance criteria、実行上限を固定する。
 2. Validator が決定論検査と harness を実行し証跡だけ返す。
 3. Commander が Rubric reviewer として要件を独立採点する。
-4. Supervisor が `GO / conditional GO / NO-GO` を裁定する。
+4. Supervisor が `$review-go-nogo` で `GO / conditional GO / NO-GO` を裁定する。conditional GO は follow-up 付き GO であり、P2 を隠れた NO-GO にしない。
 
 実装者は P-F に参加させない。Validator と Rubric reviewer は修正しない。
 
@@ -238,8 +238,9 @@ P-# / M-# の明示は、必要な Herdr pane と agent をこの task のため
 - review / audit と実装を同じ agent に兼務させない。
 - Supervisor、Commander、実行層を同じ agent に兼務させない。
 - 1 turn は 1 小 task とし、30 分を超えそうなら分割する。
-- blocker は `problem / impact / evidence / proposed next action` で返させる。
-- fix-loop は最大回数を先に決め、同じ失敗が続いたら停止して再設計する。
+- blocker は `problem / impact / evidence / proposed next action` で返させる。class は `$review-go-nogo`。
+- fix-loop は最大回数を先に決め、NO-GO が残っている間だけ回す。P2 だけで延ばさない。同じ失敗が続いたら停止して再設計する。
+- Sol High の review packet には `$review-go-nogo` の reviewer packet を含める。
 - full E2E を低レイヤの検査で代替しない。
 - 作成した pane だけを管理し、明示指示なしに close しない。
 
@@ -268,7 +269,7 @@ Report:
 - 結論
 - changed files または reviewed files
 - commands run と exact result
-- blocker / remaining risk
+- blocker（NO-GO のみ） / remaining risk（P2 follow-up）
 
 いまは role を理解したことだけ一行で返してください。
 ```

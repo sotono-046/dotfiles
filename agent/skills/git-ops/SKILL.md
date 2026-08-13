@@ -58,18 +58,18 @@ fix(api): resolve token expiry issue
 - MISA のステータスやラベル変化は待たない。`review:pending` または `review:blocker` が付いていても、レビューコメントやスレッドに具体的な指摘がなければレビュー入力としては無視する
 - PR がレビュー段階に入ったら、待機やポーリングを挟まず、別タスクの Codex に同じ head SHA を独立レビューさせる。Subagent 機能が使える場合はそれを優先し、使えない場合は `codex exec review` を使う
 - レビューモデルは固定しない。起動時に OpenAI 公式の [Codex Models](https://learn.chatgpt.com/docs/models.md) と実行環境の利用可能モデルを確認し、複雑なコードレビューに適した利用可能な最新モデルを選ぶ。ユーザーが特定バージョンを指定した場合は、そのバージョンに固定する明示指示かを確認する
-- 対象 PR、head SHA、base branch、レビュー観点を渡し、作業ツリーを変更させない読み取り専用レビューとする。起動直前に `git status --short --branch` と HEAD を記録し、終了直後に再取得して差分がないことを確認する。CLI では次の形を使う
+- 対象 PR、head SHA、base branch、レビュー観点を渡し、作業ツリーを変更させない読み取り専用レビューとする。判定基準は `$review-go-nogo`。prompt に同スキルの reviewer packet を含める。起動直前に `git status --short --branch` と HEAD を記録し、終了直後に再取得して差分がないことを確認する。CLI では次の形を使う
 
 ```bash
 codex exec -C "$TARGET_REPO" --sandbox read-only review \
   -m "<runtime-selected-review-model>" \
   --base "$BASE_BRANCH" \
-  "PRと現在の head SHA を確認し、重大度順にコードレビューしてください。編集はしないでください。"
+  "PRと現在の head SHA を確認し、$review-go-nogo の基準でコードレビューしてください。NO-GO は再現可能な P0/P1 の実害だけ。P2 以下は follow-up。編集はしないでください。"
 ```
 
 前後で status または HEAD が変化していたらレビュー結果を採用せず、意図しない mutation として停止する。
 
-- 独立レビューで重大指摘がなく、必要な CI も通った場合は、MISA ラベルの変化を待たずに `ci-merge-watch` の後続を進める
+- 独立レビューで NO-GO がなく、必要な CI も通った場合は、MISA ラベルの変化を待たずに `ci-merge-watch` の後続を進める。P2 follow-up が残っていても後続を止めない
 - MISA から現在の head に対する具体的な指摘が実際に届いた場合は無視しない。指摘の根拠と適用可否を確認し、必要な修正と検証を行い、最新 head を再レビューしてからコメントを解決する
 
 ### PR テンプレート

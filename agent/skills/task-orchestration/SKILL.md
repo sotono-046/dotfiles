@@ -86,7 +86,7 @@ report: changed files, checks, results, remaining risks
 
 ### 検証
 
-read-only review と自動修正を同じ packet に混ぜない。まず finding を返させ、修正が許可された場合だけ別の実装 turn にする。
+read-only review と自動修正を同じ packet に混ぜない。まず finding を返させ、`$review-go-nogo` で class 分けする。NO-GO だけを次の実装 turn に渡し、P2 以下は follow-up として報告して修正 turn を起こさない。
 
 ### 長時間監視
 

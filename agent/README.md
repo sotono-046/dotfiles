@@ -47,6 +47,7 @@
 | `herdr`                     | Herdr の pane / agent 操作と本文 + Enter の task packet 送信       |
 | `issue-masher`              | Issue解釈からreview済みSOWと作業branch作成まで                     |
 | `pr-base-sync`              | PR branchをbase最新状態へ安全に同期して検証                        |
+| `review-go-nogo`            | レビューの GO/NO-GO。重大な実害だけ blocker、P2 は follow-up         |
 | `subagent-team`             | Codex / Claudeの常駐subagent adapter                              |
 
 ## `./hooks`
