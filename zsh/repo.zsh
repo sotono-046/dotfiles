@@ -224,6 +224,9 @@ cur() {
     fi
 }
 
+# dotfiles を Cursor で開く
+alias dot='cursor "$HOME/dotfiles"'
+
 # fzf でリポジトリを選び、cd して Claude Code を起動する
 # usage: repo-claude [work_dir]
 repo-claude() {
