@@ -250,99 +250,164 @@ repo-codex() {
     fi
 }
 
-# 現在のリポジトリ内の worktree を fzf で選んで cd する（repo の第2段階と同じ UI）
-# usage: wt
-wt() {
-    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        echo "このディレクトリはGitリポジトリではありません"
+# y/N を読み、y/yes なら成功を返す内部関数
+_wt_confirm() {
+    local prompt="$1"
+    local reply
+
+    if [[ -n "$prompt" ]]; then
+        printf '%s [y/N] ' "$prompt"
+    else
+        printf '[y/N] '
+    fi
+    if ! read -r reply; then
+        echo
         return 1
     fi
 
-    local worktree_choices
-    worktree_choices=$(_git_worktree_choices .)
-    local worktree_count
-    worktree_count=$(printf '%s\n' "$worktree_choices" | sed '/^$/d' | wc -l | tr -d ' ')
+    [[ "$reply" == [yY] || "$reply" == [yY][eE][sS] ]]
+}
 
-    if (( worktree_count <= 1 )); then
+# cwd が対象 worktree 配下なら親 worktree へ移る内部関数
+_wt_leave_worktree_if_inside() {
+    local target_path="$1"
+    local main_path="$2"
+
+    if [[ "$PWD" == "$target_path" || "$PWD" == "$target_path"/* ]]; then
+        cd "$main_path" || return 1
+        echo "作業ディレクトリを親ワークツリーへ移動しました: $main_path"
+    fi
+}
+
+# 親以外の linked worktree を確認付きで削除する。
+# --node は削除せず、各 linked worktree 直下の node_modules だけ消す。
+# usage: _wt_clean [--node]
+_wt_clean() {
+    local node_only=0
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --node)
+                node_only=1
+                shift
+                ;;
+            -*)
+                echo "unknown option: $1" >&2
+                echo "usage: wt clean [--node]" >&2
+                return 1
+                ;;
+            *)
+                echo "usage: wt clean [--node]" >&2
+                return 1
+                ;;
+        esac
+    done
+
+    local worktree_choices
+    worktree_choices=$(_git_worktree_choices .) || return 1
+
+    local main_line
+    main_line=$(printf '%s\n' "$worktree_choices" | sed '/^$/d' | sed -n '1p')
+    local main_path
+    main_path=$(printf '%s\n' "$main_line" | cut -f2-)
+
+    local linked_choices
+    linked_choices=$(printf '%s\n' "$worktree_choices" | sed '/^$/d' | sed '1d')
+
+    if [[ -z "$linked_choices" ]]; then
         echo "追加のワークツリーはありません"
         return 1
     fi
 
-    local selected
-    selected=$(printf '%s\n' "$worktree_choices" | fzf --prompt='worktree> ')
-    if [[ -n "$selected" ]]; then
-        cd "$(printf '%s\n' "$selected" | cut -f2-)"
-    fi
-}
+    local branch path
+    local -a targets=()
 
-# 現在のリポジトリの develop worktree へ移動し、最新化する。
-# develop が別 worktree で使われている場合はそこへ移動し、
-# ブランチが存在しない場合は remote-tracking branch または現在の HEAD から作成する。
-# usage: todev
-todev() {
-    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        echo "このディレクトリはGitリポジトリではありません" >&2
-        return 1
-    fi
-
-    local repo_root
-    repo_root=$(git rev-parse --show-toplevel) || return 1
-
-    local worktree_branch worktree_path develop_worktree=""
-    while IFS=$'\t' read -r worktree_branch worktree_path; do
-        if [[ "$worktree_branch" == "develop" ]]; then
-            develop_worktree="$worktree_path"
-            break
-        fi
-    done <<< "$(_git_worktree_choices "$repo_root")"
-
-    if [[ -n "$develop_worktree" ]]; then
-        cd "$develop_worktree" || return 1
-    elif git show-ref --verify --quiet refs/heads/develop; then
-        git switch develop || return 1
-    else
-        local remote_develop=""
-        if git show-ref --verify --quiet refs/remotes/origin/develop; then
-            remote_develop="origin/develop"
-        else
-            local -a remote_develop_candidates
-            remote_develop_candidates=(${(f)"$(git for-each-ref \
-                --format='%(refname:short)' 'refs/remotes/*/develop')"})
-
-            if (( ${#remote_develop_candidates[@]} == 1 )); then
-                remote_develop="${remote_develop_candidates[1]}"
-            elif (( ${#remote_develop_candidates[@]} > 1 )); then
-                echo "develop の remote-tracking branch が複数あります:" >&2
-                printf '  %s\n' "${remote_develop_candidates[@]}" >&2
-                return 1
+    if (( node_only )); then
+        echo "親以外のワークツリーの node_modules:"
+        while IFS=$'\t' read -r branch path; do
+            [[ -n "$path" ]] || continue
+            if [[ -e "$path/node_modules" ]]; then
+                targets+=("$branch"$'\t'"$path")
+                printf '  %s\n    %s\n' "$branch" "$path/node_modules"
             fi
+        done <<< "$linked_choices"
+
+        if (( ${#targets[@]} == 0 )); then
+            echo "削除する node_modules はありません"
+            return 0
         fi
 
-        if [[ -n "$remote_develop" ]]; then
-            git switch -c develop --track "$remote_develop" || return 1
+        echo
+        if ! _wt_confirm "これらの node_modules を削除しますか?"; then
+            echo "キャンセルしました"
+            return 1
+        fi
+
+        local removed=0 failed=0
+        for entry in "${targets[@]}"; do
+            branch=$(printf '%s\n' "$entry" | cut -f1)
+            path=$(printf '%s\n' "$entry" | cut -f2-)
+            if rm -rf -- "$path/node_modules"; then
+                echo "削除しました: $branch  $path/node_modules"
+                removed=$((removed + 1))
+            else
+                echo "削除に失敗しました: $branch  $path/node_modules" >&2
+                failed=$((failed + 1))
+            fi
+        done
+
+        echo "完了: ${removed} 件削除${failed:+, ${failed} 件失敗}"
+        (( failed == 0 ))
+        return
+    fi
+
+    echo "親ワークツリー: $main_path"
+    echo "削除候補:"
+    while IFS=$'\t' read -r branch path; do
+        [[ -n "$path" ]] || continue
+        printf '  %s\n    %s\n' "$branch" "$path"
+    done <<< "$linked_choices"
+    echo
+
+    local removed=0 skipped=0 failed=0
+    while IFS=$'\t' read -r branch path; do
+        [[ -n "$path" ]] || continue
+
+        printf 'このワークツリーを削除しますか?\n  %s\n  %s\n' "$branch" "$path"
+        if ! _wt_confirm ""; then
+            echo "スキップしました: $branch"
+            skipped=$((skipped + 1))
+            echo
+            continue
+        fi
+
+        if ! _wt_leave_worktree_if_inside "$path" "$main_path"; then
+            echo "親ワークツリーへ移動できないためスキップします: $path" >&2
+            failed=$((failed + 1))
+            echo
+            continue
+        fi
+
+        if git worktree remove --force --force -- "$path"; then
+            echo "削除しました: $branch  $path"
+            removed=$((removed + 1))
         else
-            git switch -c develop || return 1
+            echo "削除に失敗しました: $branch  $path" >&2
+            failed=$((failed + 1))
         fi
-    fi
+        echo
+    done <<< "$linked_choices"
 
-    if git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1; then
-        git pull
-    else
-        echo "develop に upstream が未設定のため git pull はスキップします。"
-    fi
+    echo "完了: ${removed} 件削除, ${skipped} 件スキップ${failed:+, ${failed} 件失敗}"
+    (( failed == 0 ))
 }
 
-# 現在のリポジトリで新しい worktree を作って cd する（tmux を起動しない wtptmux）
-# usage: wtcl [slug]
+# 現在のリポジトリで新しい worktree を作って cd する
+# usage: _wt_create [slug]
 #   - slug 省略時は sotono/YYYYMMDDHHMMSS のブランチを作成
 #   - slug 指定時は sotono/<slug> のブランチを作成
 #   - fzf でベースブランチ（ローカル + リモート、更新順）を選択
-wtcl() {
-    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        echo "このディレクトリはGitリポジトリではありません"
-        return 1
-    fi
-
+_wt_create() {
     local slug="${1:-$(date +%Y%m%d%H%M%S)}"
     local new_branch="sotono/${slug}"
 
@@ -391,6 +456,196 @@ wtcl() {
     cd "${worktree_path}" || return 1
     echo "${worktree_path}" >> "$REPOHIST_FILE"
     echo "${worktree_path}"
+}
+
+# 現在のリポジトリ内の worktree を fzf で選んで cd する（repo の第2段階と同じ UI）
+# usage: wt
+#        wt create [slug]
+#        wt clean
+#        wt clean --node
+wt() {
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        echo "このディレクトリはGitリポジトリではありません"
+        return 1
+    fi
+
+    case "${1:-}" in
+        create)
+            shift
+            _wt_create "$@"
+            ;;
+        clean)
+            shift
+            _wt_clean "$@"
+            ;;
+        "")
+            local worktree_choices
+            worktree_choices=$(_git_worktree_choices .)
+            local worktree_count
+            worktree_count=$(printf '%s\n' "$worktree_choices" | sed '/^$/d' | wc -l | tr -d ' ')
+
+            if (( worktree_count <= 1 )); then
+                echo "追加のワークツリーはありません"
+                return 1
+            fi
+
+            local selected
+            selected=$(printf '%s\n' "$worktree_choices" | fzf --prompt='worktree> ')
+            if [[ -n "$selected" ]]; then
+                cd "$(printf '%s\n' "$selected" | cut -f2-)"
+            fi
+            ;;
+        *)
+            echo "unknown option: $1" >&2
+            echo "usage: wt" >&2
+            echo "       wt create [slug]" >&2
+            echo "       wt clean [--node]" >&2
+            return 1
+            ;;
+    esac
+}
+
+# worktree / ローカル / リモートブランチを「ブランチ名<TAB>パス」形式で出す内部関数
+# worktree があるブランチはパス付き、それ以外はパス空。同じ名前は worktree を優先する
+_todev_branch_choices() {
+    local repo_path="${1:-.}"
+
+    {
+        _git_worktree_choices "$repo_path"
+        git -C "$repo_path" for-each-ref --format=$'%(refname:short)\t' refs/heads/
+        git -C "$repo_path" for-each-ref --format='%(refname:short)' refs/remotes/ |
+            grep -v '/HEAD$' |
+            awk -F/ '{
+                branch = $2
+                for (i = 3; i <= NF; i++) branch = branch "/" $i
+                if (branch != "") print branch "\t"
+            }'
+    } | awk -F '\t' 'NF && $1 != "" && !seen[$1]++'
+}
+
+# 指定ブランチの worktree へ移動し、最新化する。
+# ブランチが別 worktree で使われている場合はそこへ移動し、
+# ブランチが存在しない場合は remote-tracking branch または現在の HEAD から作成する。
+# usage: todev [-s] [branch]
+#   - 引数なし: develop へ移動する
+#   - -s: fzf でブランチを選んでから実行する
+#   - branch: そのブランチへ移動する。-s 付きなら絞り込みクエリになる
+# example: todev
+# example: todev main
+# example: todev -s
+# example: todev -s main
+todev() {
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        echo "このディレクトリはGitリポジトリではありません" >&2
+        return 1
+    fi
+
+    local select_branch=0
+    local target_branch=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -s)
+                select_branch=1
+                shift
+                ;;
+            -*)
+                echo "unknown option: $1" >&2
+                echo "usage: todev [-s] [branch]" >&2
+                return 1
+                ;;
+            *)
+                if [[ -n "$target_branch" ]]; then
+                    echo "usage: todev [-s] [branch]" >&2
+                    return 1
+                fi
+                target_branch="$1"
+                shift
+                ;;
+        esac
+    done
+
+    local repo_root
+    repo_root=$(git rev-parse --show-toplevel) || return 1
+
+    if (( select_branch )); then
+        local branch_choices
+        branch_choices=$(_todev_branch_choices "$repo_root") || return 1
+
+        if [[ -n "$target_branch" ]]; then
+            branch_choices=$(printf '%s\n' "$branch_choices" |
+                awk -v query="$target_branch" 'index(tolower($1), tolower(query))')
+        fi
+
+        local branch_count
+        branch_count=$(printf '%s\n' "$branch_choices" | sed '/^$/d' | wc -l | tr -d ' ')
+
+        local selected
+        if (( branch_count == 0 )); then
+            if [[ -n "$target_branch" ]]; then
+                echo "一致するブランチがありません: $target_branch" >&2
+            else
+                echo "ブランチが見つかりません" >&2
+            fi
+            return 1
+        elif (( branch_count == 1 )); then
+            selected="$branch_choices"
+        else
+            selected=$(printf '%s\n' "$branch_choices" |
+                fzf --header 'Select branch' --with-nth=1 --delimiter=$'\t')
+        fi
+
+        if [[ -z "$selected" ]]; then
+            return 1
+        fi
+
+        target_branch=$(printf '%s\n' "$selected" | cut -f1)
+    elif [[ -z "$target_branch" ]]; then
+        target_branch="develop"
+    fi
+
+    local worktree_branch worktree_path target_worktree=""
+    while IFS=$'\t' read -r worktree_branch worktree_path; do
+        if [[ "$worktree_branch" == "$target_branch" ]]; then
+            target_worktree="$worktree_path"
+            break
+        fi
+    done <<< "$(_git_worktree_choices "$repo_root")"
+
+    if [[ -n "$target_worktree" ]]; then
+        cd "$target_worktree" || return 1
+    elif git show-ref --verify --quiet "refs/heads/${target_branch}"; then
+        git switch "$target_branch" || return 1
+    else
+        local remote_branch=""
+        if git show-ref --verify --quiet "refs/remotes/origin/${target_branch}"; then
+            remote_branch="origin/${target_branch}"
+        else
+            local -a remote_branch_candidates
+            remote_branch_candidates=(${(f)"$(git for-each-ref \
+                --format='%(refname:short)' "refs/remotes/*/${target_branch}")"})
+
+            if (( ${#remote_branch_candidates[@]} == 1 )); then
+                remote_branch="${remote_branch_candidates[1]}"
+            elif (( ${#remote_branch_candidates[@]} > 1 )); then
+                echo "${target_branch} の remote-tracking branch が複数あります:" >&2
+                printf '  %s\n' "${remote_branch_candidates[@]}" >&2
+                return 1
+            fi
+        fi
+
+        if [[ -n "$remote_branch" ]]; then
+            git switch -c "$target_branch" --track "$remote_branch" || return 1
+        else
+            git switch -c "$target_branch" || return 1
+        fi
+    fi
+
+    if git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1; then
+        git pull
+    else
+        echo "${target_branch} に upstream が未設定のため git pull はスキップします。"
+    fi
 }
 
 # 初期化
