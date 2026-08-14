@@ -1,4 +1,4 @@
-# 月と名前から WORK_DIR 配下に作業ディレクトリを作る。
+# 月と名前から WORK_DIR 配下に作業ディレクトリを作り、そこへ移動する。
 # usage: new <name> [name ...]
 # example: new sotono hogefuga -> $WORK_DIR/2607_sotono_hogefuga
 new() {
@@ -21,5 +21,6 @@ new() {
 
     mkdir -p -- "$work_dir" || return 1
     mkdir -- "$target_path" || return 1
+    cd "$target_path" || return 1
     echo "$target_path"
 }

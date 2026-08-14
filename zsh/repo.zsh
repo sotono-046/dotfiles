@@ -275,6 +275,63 @@ wt() {
     fi
 }
 
+# 現在のリポジトリの develop worktree へ移動し、最新化する。
+# develop が別 worktree で使われている場合はそこへ移動し、
+# ブランチが存在しない場合は remote-tracking branch または現在の HEAD から作成する。
+# usage: todev
+todev() {
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        echo "このディレクトリはGitリポジトリではありません" >&2
+        return 1
+    fi
+
+    local repo_root
+    repo_root=$(git rev-parse --show-toplevel) || return 1
+
+    local worktree_branch worktree_path develop_worktree=""
+    while IFS=$'\t' read -r worktree_branch worktree_path; do
+        if [[ "$worktree_branch" == "develop" ]]; then
+            develop_worktree="$worktree_path"
+            break
+        fi
+    done <<< "$(_git_worktree_choices "$repo_root")"
+
+    if [[ -n "$develop_worktree" ]]; then
+        cd "$develop_worktree" || return 1
+    elif git show-ref --verify --quiet refs/heads/develop; then
+        git switch develop || return 1
+    else
+        local remote_develop=""
+        if git show-ref --verify --quiet refs/remotes/origin/develop; then
+            remote_develop="origin/develop"
+        else
+            local -a remote_develop_candidates
+            remote_develop_candidates=(${(f)"$(git for-each-ref \
+                --format='%(refname:short)' 'refs/remotes/*/develop')"})
+
+            if (( ${#remote_develop_candidates[@]} == 1 )); then
+                remote_develop="${remote_develop_candidates[1]}"
+            elif (( ${#remote_develop_candidates[@]} > 1 )); then
+                echo "develop の remote-tracking branch が複数あります:" >&2
+                printf '  %s\n' "${remote_develop_candidates[@]}" >&2
+                return 1
+            fi
+        fi
+
+        if [[ -n "$remote_develop" ]]; then
+            git switch -c develop --track "$remote_develop" || return 1
+        else
+            git switch -c develop || return 1
+        fi
+    fi
+
+    if git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1; then
+        git pull
+    else
+        echo "develop に upstream が未設定のため git pull はスキップします。"
+    fi
+}
+
 # 現在のリポジトリで新しい worktree を作って cd する（tmux を起動しない wtptmux）
 # usage: wtcl [slug]
 #   - slug 省略時は sotono/YYYYMMDDHHMMSS のブランチを作成
