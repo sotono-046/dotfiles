@@ -81,3 +81,12 @@ fi
 
 # Added by Antigravity IDE
 export PATH="/Users/sotono/.antigravity-ide/antigravity-ide/bin:$PATH"
+
+# Added by cua-driver-rs installer — see https://github.com/trycua/cua
+export PATH="/Users/sotono/.local/bin:$PATH"
+
+# >>> grok installer >>>
+export PATH="$HOME/.grok/bin:$PATH"
+fpath=(~/.grok/completions/zsh $fpath)
+autoload -Uz compinit && compinit -C
+# <<< grok installer <<<
