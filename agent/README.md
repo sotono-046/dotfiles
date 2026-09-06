@@ -50,16 +50,12 @@
 | `review-go-nogo`            | レビューの GO/NO-GO。重大な実害だけ blocker、P2 は follow-up         |
 | `subagent-team`             | Codex / Claudeの常駐subagent adapter                              |
 
-## `./hooks`
-
-`~/.claude/hooks` に配信される SessionStart/SessionEnd/Stop/Notification hook 群。Discord にスレッドを作成し、セッション開始・終了通知に加えてターン毎の応答抜粋・権限待ち通知を投稿し、tmux 内であれば Discord への返信をプロンプトとして注入する（双方向連携）。トークンは `~/.discord-ops-env`（git 管理外・600 権限）から環境変数として読み込む。secret はスクリプト本体には含まれない。別マシンへの導入手順は `agent/docs/discord-bridge-setup.md` を参照。
-
 ## `./settings.json`
 
 Claude Code の設定ファイル（`~/.claude/settings.json` に配信）。
 
 - 権限設定（allow/deny/ask）
-- hooks 設定（通知音、SessionStart/SessionEnd の Discord 連携）
+- hooks 設定（Notification / Stop の通知音）
 - enabledPlugins / extraKnownMarketplaces
 
 `allow` は読み取り系toolとSerenaのread-only操作に限定し、push・merge・deploy・破壊的commandは `ask` に寄せる。読み取り専用セッションには `.zshrc` が読み込む `claude-ro` / `codex-ro` を使う。Claude向けはlauncherと `readonly-settings.json` の組み合わせでhooks、connectors、MCP、local writeを停止する。

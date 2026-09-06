@@ -404,6 +404,7 @@ install_base_links() {
 install_agent_links() {
   remove_managed_link "$DOTFILES_HOME/.claude/commands" "$SCRIPT_DIR/agent/commands"
   remove_managed_link "$DOTFILES_HOME/.codex/prompts" "$SCRIPT_DIR/agent/commands"
+  remove_managed_link "$DOTFILES_HOME/.claude/hooks" "$SCRIPT_DIR/agent/hooks"
 
   local links=(
     "agent/CLAUDE.md:$DOTFILES_HOME/.claude/CLAUDE.md"
@@ -411,7 +412,6 @@ install_agent_links() {
     "agent/AGENTS.md:$DOTFILES_HOME/.gemini/GEMINI.md"
     "agent/agents:$DOTFILES_HOME/.claude/agents"
     "agent/settings.json:$DOTFILES_HOME/.claude/settings.json"
-    "agent/hooks:$DOTFILES_HOME/.claude/hooks"
   )
   local item
   for item in "${links[@]}"; do

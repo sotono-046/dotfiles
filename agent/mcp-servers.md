@@ -31,7 +31,7 @@ claude mcp add --transport sse --scope user discord-ops http://<tailscale-ip>:38
 
 **トークンの置き場所**: `~/.discord-ops-env`（600権限、git 管理外）に `DISCORD_OPS_HTTP_TOKEN=...` を書き、`.zshrc` が `set -a; source ~/.discord-ops-env; set +a` で export する。`~/.claude.json` に平文トークンを書かないこと。
 
-**制約**: `${DISCORD_OPS_HTTP_TOKEN}` の展開は Claude Code プロセス自身の環境変数に依存するため、**ターミナル（インタラクティブシェル経由）起動が前提**。Dock/Spotlight などから launchd 経由で起動した GUI アプリでは `.zshrc` を読まないため変数が渡らず、discord-ops MCP の認証に失敗する。GUI 起動もサポートしたい場合は `launchctl setenv DISCORD_OPS_HTTP_TOKEN ...` を行う LaunchAgent の追加を検討する（今回は未対応）。なお hooks（`agent/hooks/session-*.sh`）は自前で `~/.discord-ops-env` を source するためこの制約を受けない。
+**制約**: `${DISCORD_OPS_HTTP_TOKEN}` の展開は Claude Code プロセス自身の環境変数に依存するため、**ターミナル（インタラクティブシェル経由）起動が前提**。Dock/Spotlight などから launchd 経由で起動した GUI アプリでは `.zshrc` を読まないため変数が渡らず、discord-ops MCP の認証に失敗する。GUI 起動もサポートしたい場合は `launchctl setenv DISCORD_OPS_HTTP_TOKEN ...` を行う LaunchAgent の追加を検討する（今回は未対応）。
 
 **注意**: serena は `uvx --from git+...` で毎回リポジトリの最新版を取得して起動する。再現性より最新機能を優先する構成。ピン留めしたい場合は `git+https://github.com/oraios/serena@<tag>` のようにタグ/コミットを指定する。
 
