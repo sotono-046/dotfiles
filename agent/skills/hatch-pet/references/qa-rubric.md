@@ -1,6 +1,6 @@
 # V2 Pet QA Rubric
 
-Do not package a pet until every section passes.
+Package only when required checks pass and minor warnings have evidence-backed resolutions under [validation.md](validation.md). A missing required check is unverified, not a pass.
 
 ## Geometry And Package
 
@@ -31,8 +31,8 @@ Do not package a pet until every section passes.
 - All 16 directions are present in fixed clockwise order and visibly distinct from neutral/rest.
 - Cardinal directions read unmistakably as up, right, down, and left; diagonals and intermediates read in the correct quadrant.
 - `qa/look-directions.png` includes full-body and zoomed head/upper-body views.
-- `qa/direction-semantics.json` records `pass`, `expected`, `observed`, and `reason` for every direction.
-- `qa/look-continuity.json` has no unexplained holes, center jumps, area jumps, or local difference outliers.
+- `qa/direction-semantics.json` records `verdict` (`pass`, `warning`, or `fail`), `expected`, `observed`, and `reason` for every direction.
+- `qa/look-continuity.json` has been reviewed. Metric candidates alone are warnings; visible snaps, registration jumps, broken silhouettes or semantic discontinuities fail.
 - Eyes, eyelids, head, body, appendages, and props follow the pet-specific look mechanics plan.
 - No whole-sprite rotation, replacement/googly eyes, visual clipping, seam bands, or transparent interior holes.
 - A repaired direction is approved by an independent visual QA worker or explicit user inspection, not the repairing parent alone.
