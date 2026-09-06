@@ -263,12 +263,38 @@ _wt_confirm() {
     else
         printf '[y/N] '
     fi
-    if ! read -r reply; then
+    # 候補一覧を pipe / here-string で走査中でも、確認入力は端末から受け取る。
+    if ! read -r reply </dev/tty; then
         echo
         return 1
     fi
 
     [[ "$reply" == [yY] || "$reply" == [yY][eE][sS] ]]
+}
+
+# 固定幅の進捗バーを表示する内部関数
+_wt_progress_bar() {
+    local current="$1"
+    local total="$2"
+    local label="$3"
+    local width=20
+    local filled=0
+    local bar=""
+    local index
+
+    if (( total > 0 )); then
+        filled=$((current * width / total))
+    fi
+
+    for (( index = 1; index <= width; index++ )); do
+        if (( index <= filled )); then
+            bar="${bar}="
+        else
+            bar="${bar}."
+        fi
+    done
+
+    printf '[%s] %d/%d %s\n' "$bar" "$current" "$total" "$label"
 }
 
 # cwd が対象 worktree 配下なら親 worktree へ移る内部関数
@@ -284,9 +310,11 @@ _wt_leave_worktree_if_inside() {
 
 # 親以外の linked worktree を確認付きで削除する。
 # --node は削除せず、各 linked worktree 直下の node_modules だけ消す。
-# usage: _wt_clean [--node]
+# --all は対象一覧を表示して一度だけ確認し、親以外をすべて削除する。
+# usage: _wt_clean [--node | --all]
 _wt_clean() {
     local node_only=0
+    local remove_all=0
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -294,17 +322,27 @@ _wt_clean() {
                 node_only=1
                 shift
                 ;;
+            --all)
+                remove_all=1
+                shift
+                ;;
             -*)
                 echo "unknown option: $1" >&2
-                echo "usage: wt clean [--node]" >&2
+                echo "usage: wt clean [--node | --all]" >&2
                 return 1
                 ;;
             *)
-                echo "usage: wt clean [--node]" >&2
+                echo "usage: wt clean [--node | --all]" >&2
                 return 1
                 ;;
         esac
     done
+
+    if (( node_only && remove_all )); then
+        echo "--node と --all は同時に指定できません" >&2
+        echo "usage: wt clean [--node | --all]" >&2
+        return 1
+    fi
 
     local worktree_choices
     worktree_choices=$(_git_worktree_choices .) || return 1
@@ -322,16 +360,16 @@ _wt_clean() {
         return 1
     fi
 
-    local branch path
+    local branch worktree_path
     local -a targets=()
 
     if (( node_only )); then
         echo "親以外のワークツリーの node_modules:"
-        while IFS=$'\t' read -r branch path; do
-            [[ -n "$path" ]] || continue
-            if [[ -e "$path/node_modules" ]]; then
-                targets+=("$branch"$'\t'"$path")
-                printf '  %s\n    %s\n' "$branch" "$path/node_modules"
+        while IFS=$'\t' read -r branch worktree_path; do
+            [[ -n "$worktree_path" ]] || continue
+            if [[ -e "$worktree_path/node_modules" ]]; then
+                targets+=("$branch"$'\t'"$worktree_path")
+                printf '  %s\n    %s\n' "$branch" "$worktree_path/node_modules"
             fi
         done <<< "$linked_choices"
 
@@ -347,15 +385,20 @@ _wt_clean() {
         fi
 
         local removed=0 failed=0
+        local target_total=${#targets[@]}
+        local target_index=0
         for entry in "${targets[@]}"; do
             branch=$(printf '%s\n' "$entry" | cut -f1)
-            path=$(printf '%s\n' "$entry" | cut -f2-)
-            if rm -rf -- "$path/node_modules"; then
-                echo "削除しました: $branch  $path/node_modules"
+            worktree_path=$(printf '%s\n' "$entry" | cut -f2-)
+            _wt_progress_bar "$target_index" "$target_total" "削除中: $branch/node_modules"
+            if rm -rf -- "$worktree_path/node_modules"; then
                 removed=$((removed + 1))
+                target_index=$((target_index + 1))
+                _wt_progress_bar "$target_index" "$target_total" "削除しました: $branch/node_modules"
             else
-                echo "削除に失敗しました: $branch  $path/node_modules" >&2
                 failed=$((failed + 1))
+                target_index=$((target_index + 1))
+                _wt_progress_bar "$target_index" "$target_total" "削除に失敗しました: $branch/node_modules" >&2
             fi
         done
 
@@ -366,37 +409,58 @@ _wt_clean() {
 
     echo "親ワークツリー: $main_path"
     echo "削除候補:"
-    while IFS=$'\t' read -r branch path; do
-        [[ -n "$path" ]] || continue
-        printf '  %s\n    %s\n' "$branch" "$path"
+    while IFS=$'\t' read -r branch worktree_path; do
+        [[ -n "$worktree_path" ]] || continue
+        printf '  %s\n    %s\n' "$branch" "$worktree_path"
     done <<< "$linked_choices"
     echo
 
+    if (( remove_all )); then
+        if ! _wt_confirm "未コミット変更を含め、親以外の全ワークツリーを削除しますか?"; then
+            echo "キャンセルしました"
+            return 1
+        fi
+        echo
+    fi
+
+    local total_count
+    total_count=$(printf '%s\n' "$linked_choices" | sed '/^$/d' | wc -l | tr -d ' ')
+    local current_index=0
     local removed=0 skipped=0 failed=0
-    while IFS=$'\t' read -r branch path; do
-        [[ -n "$path" ]] || continue
+    while IFS=$'\t' read -r branch worktree_path; do
+        [[ -n "$worktree_path" ]] || continue
 
-        printf 'このワークツリーを削除しますか?\n  %s\n  %s\n' "$branch" "$path"
-        if ! _wt_confirm ""; then
-            echo "スキップしました: $branch"
-            skipped=$((skipped + 1))
-            echo
-            continue
+        if (( ! remove_all )); then
+            printf 'このワークツリーを削除しますか?\n  %s\n  %s\n' "$branch" "$worktree_path"
+            if ! _wt_confirm ""; then
+                echo "スキップしました: $branch"
+                skipped=$((skipped + 1))
+                current_index=$((current_index + 1))
+                _wt_progress_bar "$current_index" "$total_count" "スキップ: $branch"
+                echo
+                continue
+            fi
         fi
 
-        if ! _wt_leave_worktree_if_inside "$path" "$main_path"; then
-            echo "親ワークツリーへ移動できないためスキップします: $path" >&2
+        _wt_progress_bar "$current_index" "$total_count" "削除中: $branch"
+
+        if ! _wt_leave_worktree_if_inside "$worktree_path" "$main_path"; then
+            echo "親ワークツリーへ移動できないためスキップします: $worktree_path" >&2
             failed=$((failed + 1))
+            current_index=$((current_index + 1))
+            _wt_progress_bar "$current_index" "$total_count" "削除に失敗しました: $branch" >&2
             echo
             continue
         fi
 
-        if git worktree remove --force --force -- "$path"; then
-            echo "削除しました: $branch  $path"
+        if git worktree remove --force --force -- "$worktree_path"; then
             removed=$((removed + 1))
+            current_index=$((current_index + 1))
+            _wt_progress_bar "$current_index" "$total_count" "削除しました: $branch"
         else
-            echo "削除に失敗しました: $branch  $path" >&2
             failed=$((failed + 1))
+            current_index=$((current_index + 1))
+            _wt_progress_bar "$current_index" "$total_count" "削除に失敗しました: $branch" >&2
         fi
         echo
     done <<< "$linked_choices"
@@ -466,6 +530,7 @@ _wt_create() {
 #        wt create [slug]
 #        wt clean
 #        wt clean --node
+#        wt clean --all
 wt() {
     if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         echo "このディレクトリはGitリポジトリではありません"
@@ -502,7 +567,7 @@ wt() {
             echo "unknown option: $1" >&2
             echo "usage: wt" >&2
             echo "       wt create [slug]" >&2
-            echo "       wt clean [--node]" >&2
+            echo "       wt clean [--node | --all]" >&2
             return 1
             ;;
     esac
