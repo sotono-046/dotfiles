@@ -29,7 +29,11 @@
 
 ## `./skills`
 
-スキル本体。`install.sh` は `SKILL.md` を持つ top-level directory だけを `~/.claude/skills` と `~/.codex/skills` に個別配信する。repo内の `skills/.system/` は検証用snapshotとして保持するが配信せず、`~/.codex/skills/.system` は Codex 本体の管理に任せる。
+スキル本体。`install.sh` は `SKILL.md` を持つ top-level directory を `~/.claude/skills`、`~/.codex/skills`、`~/.gemini/skills` に個別配信する。各 runtime に追加したユーザー所有 skill は保持する。
+
+`skills/.system/` は Codex 用 snapshot。初回に `~/.codex/skills/.system` がなければコピーし、以後の更新は Codex 本体に任せる。既存の実ディレクトリは installer で上書きしない。
+
+置換前のファイルは `~/.local/state/dotfiles/backups/` に元の相対パスを保って退避する。過去の installer が skills 直下に残した `*.dotbackup.*` は、直下に `SKILL.md` があるものだけ同じ退避先へ移す。backup が旧 skill として再登録されないよう、探索ルート内には置かない。`--dry-run` は移動予定の表示だけを行う。
 
 | スキル                     | 用途                                                             |
 | -------------------------- | ---------------------------------------------------------------- |
@@ -58,7 +62,9 @@ Claude Code の設定ファイル（`~/.claude/settings.json` に配信）。
 - hooks 設定（Notification / Stop の通知音）
 - enabledPlugins / extraKnownMarketplaces
 
-`allow` は読み取り系toolとSerenaのread-only操作に限定し、push・merge・deploy・破壊的commandは `ask` に寄せる。読み取り専用セッションには `.zshrc` が読み込む `claude-ro` / `codex-ro` を使う。Claude向けはlauncherと `readonly-settings.json` の組み合わせでhooks、connectors、MCP、local writeを停止する。
+通常起動は `defaultMode=auto`。読み取り系 tool に加え、push・merge・deploy・削除コマンドも `allow` に登録し、`ask` は sudo に設定している。`auto` でも明示的な allow は classifier より前に適用されうるため、通常設定を読み取り専用として扱わない。
+
+読み取り専用セッションには `.zshrc` が読み込む `claude-ro` / `codex-ro` を使う。Claude 向けは launcher と `readonly-settings.json` の組み合わせで hooks、connectors、MCP、local write を停止する。`codex-ro` は shell の sandbox を read-only にするもので、通常設定の外部 MCP / plugin まで書き込みを制限する保証はない。その経路の実行検証は未実施。
 
 MCP サーバー自体の定義は secret を含むためこのリポジトリでは管理しない。`agent/mcp-servers.md` に再構築手順をドキュメント化している。
 

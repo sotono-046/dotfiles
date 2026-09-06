@@ -168,8 +168,13 @@ parse_args() {
 
 next_backup_path() {
   local path="$1"
-  local base
-  base="${path}.dotbackup.$(date +%Y%m%d%H%M%S)"
+  local relative base
+  case "$path" in
+    "$DOTFILES_HOME"/*) relative="${path#"$DOTFILES_HOME"/}" ;;
+    *) warn "Refusing to back up a path outside target home: $path"; return 1 ;;
+  esac
+  # Keep backups outside runtime discovery roots, including skills and agents.
+  base="$DOTFILES_HOME/.local/state/dotfiles/backups/${relative}.dotbackup.$(date +%Y%m%d%H%M%S)"
   local candidate="$base"
   local suffix=1
   while path_exists "$candidate"; do
@@ -187,6 +192,7 @@ backup_path() {
   local backup
   backup="$(next_backup_path "$path")"
   log "Backing up $path to $backup"
+  run_cmd mkdir -p "$(dirname "$backup")"
   run_cmd mv "$path" "$backup"
 }
 
@@ -256,6 +262,19 @@ prepare_real_directory() {
   fi
 }
 
+relocate_skill_backups() {
+  local skills_home="$1"
+  local skip_scan="$2"
+  [ "$skip_scan" -eq 0 ] || return 0
+  local existing
+  # Only legacy top-level installer backups with a skill entrypoint are moved.
+  # Do not walk user skill contents or other directories under the home.
+  for existing in "$skills_home"/*.dotbackup.* "$skills_home"/.*.dotbackup.*; do
+    [ -f "$existing/SKILL.md" ] || continue
+    backup_path "$existing"
+  done
+}
+
 remove_stale_skill_links() {
   local skills_home="$1"
   local skip_scan="$2"
@@ -267,7 +286,7 @@ remove_stale_skill_links() {
     path_exists "$existing" || continue
     name="$(basename "$existing")"
     case "$name" in
-      .|..|.system) continue ;;
+      .|..|.system|*.dotbackup.*) continue ;;
     esac
     [ -L "$existing" ] || continue
     target="$(readlink "$existing")"
@@ -312,6 +331,7 @@ install_skill_links() {
   local runtime="$2"
   prepare_real_directory "$skills_home" "$SKILL_SOURCE"
   local parent_replaced="$PREPARE_REPLACING"
+  relocate_skill_backups "$skills_home" "$parent_replaced"
   remove_stale_skill_links "$skills_home" "$parent_replaced"
 
   local skill_src name
@@ -320,7 +340,7 @@ install_skill_links() {
     [ -f "$skill_src/SKILL.md" ] || continue
     name="$(basename "$skill_src")"
     case "$name" in
-      .|..|.system) continue ;;
+      .|..|.system|*.dotbackup.*) continue ;;
     esac
     if [ "$DRY_RUN" -eq 1 ] && [ "$parent_replaced" -eq 1 ]; then
       run_cmd ln -s "$skill_src" "$skills_home/$name"
@@ -420,6 +440,7 @@ install_agent_links() {
 
   install_skill_links "$DOTFILES_HOME/.claude/skills" claude
   install_skill_links "$DOTFILES_HOME/.codex/skills" codex
+  install_skill_links "$DOTFILES_HOME/.gemini/skills" gemini
 }
 
 main() {
