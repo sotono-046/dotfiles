@@ -1,56 +1,19 @@
 ---
 name: pr-base-sync
-description: "PR branch と対象 PR を一意に対応づけ、dirty worktree・HEAD mismatch・base 誤認を防いで、最新の remote-tracking base branch を安全に merge し検証する。`PR-check`、`PRブランチに最新baseを取り込んで`、`developをマージして競合確認` と依頼されたときに使用する。rebase、force push、stash、push は明示指示なしに行わない。"
+description: 対象PRのbranchへ最新baseをmergeし、競合と互換性を確認する。PR-checkやbase取り込み依頼で使用する。
 ---
 
 # PR Base Sync
 
-PR branch を不用意に切り替えず、最新 base を merge して互換性を確認する。
+PR metadataのbaseを取り込み先の正本にする。project指定と違う場合は差異を示し、誤ったbaseへmergeしない。
 
-## 1. PR と checkout を対応づける
+1. repo、PR、head/base branch、head SHA、remote owner、local status/HEAD/upstream、進行中Git操作を確認する。branch名だけの一致で対象を決めない。
+2. checkout不一致やdirty、既存merge/rebase中ならその作業を保持し、必要に応じてexact PR headから隔離worktreeを作って続ける。自動stash/reset/commitで既存作業を片づけない。
+3. 対象remoteをfetchし、remote-tracking base SHAを記録する。local baseへのcheckout/pullは不要。
+4. merge直前に作業先のclean status、HEAD、進行中操作、freshなPR headとbase SHAを再確認する。PR更新があれば再固定してから `git merge --no-edit <remote>/<base>` を行う。
+5. 競合は依頼範囲と仕様から解決できるものを修正し、両branchの意図を検証する。仕様/認可が決められない競合だけ保留する。中断が必要なら、今回開始したmergeで後続編集を失わないと確認できる場合に限りabortできる。
+6. project必須checkと変更に合うfocused test/type-check/lintで互換性を確認する。必要なcommitは [git-ops](../git-ops/SKILL.md) に従い、所有pathを明示stageする。
 
-- PR URL / 番号、または明示 branch から対象を一意に解決する。
-- repository root、current branch、HEAD、upstream、`git status --short --branch` を記録する。
-- PR の head branch / head SHA / base branch / repository owner を確認する。
-- current checkout と PR head が一致しない、detached、dirty、merge / rebase 中なら変更せず停止する。
+rebase、force push、branch削除はこの依頼に含めない。pushまで認可されていれば更新後のheadとCIを確認し、なければローカル完了として報告する。既に最新なら有効なno-opとする。
 
-dirty 変更を自動 commit / stash / restore / reset しない。別 worktree を使う場合は exact PR head から作る。
-
-## 2. 最新 base を取得する
-
-1. project instructions と PR metadata の base が一致するか確認する。PR metadata を最終的な対象 base とする。
-2. repository / remote identity を確認する。
-3. 対象 remote を fetch し、`<remote>/<base>` の commit SHA を記録する。
-4. fetch 後に fresh な `git status --short --branch`、current branch、local HEAD、PR の `headRefOid`、merge / rebase / cherry-pick / revert の in-progress state をすべて再取得する。最初の確認結果を再利用せず、dirty、branch / HEAD / PR head mismatch、進行中操作が 1 つでもあれば停止する。
-
-local base branch へ checkout / pull せず、remote-tracking ref を merge source にする。
-
-## 3. Merge する
-
-ユーザーが base sync を依頼している場合だけ、対象 PR checkout で次を行う。
-
-merge command の直前にも、fetch 後と同じ status、current branch、local HEAD、fresh な PR `headRefOid`、in-progress state を再検証する。記録した `<remote>/<base>` SHA も変わっていないことを確認し、どれかが変化していたら merge せず停止する。
-
-```bash
-git merge --no-edit <remote>/<base>
-```
-
-- `git add .` / `git add -A` を使わない。
-- conflict が出たら unresolved files を報告し、割り当て scope がない限り勝手に解消しない。
-- rebase、merge abort、force push、branch deletion を追加指示なしに行わない。
-- merge 不要なら `already-up-to-date` として valid no-op を報告する。
-
-## 4. 検証して停止する
-
-- merge 前後の HEAD、base SHA、merge-base を確認する。
-- project 指定の focused test / type-check / lint を実行する。
-- conflict、検証失敗、未commit state を明示する。
-- push は明示指示がある場合だけ `$git-ops` に従って行う。
-
-次を報告する。
-
-- PR、head branch、base branch、取得した base SHA
-- merge 結果と新しい HEAD
-- conflict の有無
-- 実行した validation と結果
-- push 未実施 / 実施の状態
+完了報告にはPR、head/base SHA、merge結果、競合解消/未解決、検証結果、push状態を含める。
