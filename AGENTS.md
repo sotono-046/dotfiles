@@ -8,10 +8,10 @@
 
 - `./install.sh`: dotfiles を所定の場所へ symlink し、ローカルツールをインストール / 設定します。
 - `brew bundle --file Brewfile`: このリポジトリで宣言した Homebrew 依存関係をインストールします。
-- `zsh -n .zshrc install.sh raycast/*.sh`: shell スクリプトを実行せずに構文チェックします。
+- `bash -n install.sh`、`zsh -n .zshrc`: 対象の interpreter で1ファイルずつ構文チェックします。ほかの変更した shell script も個別に検査します。
 - `git diff --check`: commit 前に whitespace error を検出します。
 
-単一の build step はありません。触った設定に応じて最小限の検証を行い、そのうえで上記の軽量チェックを実行してください。
+単一の build step はありません。触った設定に対応する検証だけを選び、commit 前に `git diff --check` を実行してください。
 
 ## コーディングスタイルと命名
 
@@ -19,7 +19,7 @@
 
 ## テストとレビュー方針
 
-変更内容に対して最も狭く安全な検証を実行します。shell を編集した場合は、対象 script に `zsh -n` を通し、可能なら実環境に影響しない一時環境で command を実行します。agent skill や prompt を編集した場合は、Markdown の表示、参照 path、script、trigger phrase が存在することを確認します。新しい skill やエージェント向けプロンプトを作成または大幅改訂した場合は、別エージェントによる実行レビューで不明瞭点を洗い出してからブラッシュアップしてください。install 周りの変更では、`./install.sh` を走らせる前に symlink target を dry review してください。
+変更内容に対して最も狭く安全な検証を実行します。shell を編集した場合は、対象 script に `zsh -n` を通し、可能なら実環境に影響しない一時環境で command を実行します。agent skill や prompt を編集した場合は、Markdown の表示、参照 path、script、trigger phrase が存在することを確認します。複雑な skill や判断境界を大幅改訂した場合は、代表的な依頼を使った別エージェントの実行レビューで、必要な条件が残り余計な停止がないことを確認してください。小さな文言修正には一律で要求しません。install 周りの変更では、`./install.sh` を走らせる前に symlink target を dry review してください。
 
 ## Commit と Pull Request
 
