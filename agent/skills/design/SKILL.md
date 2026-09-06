@@ -4,9 +4,11 @@ description: >-
   デザイン・UI 関連依頼の統括スキル。決定木で方向を定め、references/ 配下の
   専門リファレンス（design-principles: プロダクトUIの方向決め・色・タイポ /
   muller-brockmann-grid-systems: Swiss モジュラーグリッド /
+  fixed-app-grid-debug: 固定アプリグリッドと G キーのデバッグ表示 /
   8pt-grid-spacing: 余白・gap・行高）を読み分ける。「デザインして」「UI を作って」
   「レイアウトを整えて」「ダッシュボード作って」「マガジン風」「サイドバーの余白」
-  「Linear 風」「Swiss デザイン」「グリッドに揃えて」で使用する。
+  「Linear 風」「Swiss デザイン」「グリッドに揃えて」「固定グリッド」
+  「G でグリッド表示」で使用する。
 ---
 
 # Design — 決定木 + 専門リファレンス索引
@@ -25,6 +27,7 @@ description: >-
 |--------|---------|----------|
 | **references/design-principles.md** | プロダクト UI（SaaS、ダッシュボード、管理画面、Web アプリ）の **デザイン方向決定**：personality（Precision/Warmth/Sophistication/Boldness/Utility/Data）、カラーパレット、タイポ、影、コンポーネント美意識。Linear / Notion / Stripe / Vercel / Mercury 系の精密ミニマル UI。 | 方向性のコミット → トーン・色・コンポーネント仕様 |
 | **references/muller-brockmann-grid-systems.md** | エディトリアル／マガジン／レポート／ランディングページの **モジュラーグリッド構築**。Swiss design、International Typographic Style。CSS 変数を真実とした 12 列＋8px ベースライン、subgrid バンド、display type の光学アラインメント、`scripts/grid_tokens.py` で雛形生成、`scripts/verify_grid.js` (Puppeteer) で 0px 検証。 | グリッド付き HTML/CSS、検証スクリプト |
+| **references/fixed-app-grid-debug.md** | SaaS／ダッシュボード／Web アプリの **固定レイアウトグリッド構築と可視化**。固定幅 shell、sidebar + main、12列／4列、8px baseline、領域別の四辺 margin を共通 token から構成し、開発環境で `G` キーにより overlay 表示する。 | grid token、固定アプリシェル、デバッグ overlay、ブラウザ検証 |
 | **references/8pt-grid-spacing.md** | リスト／ナビ／フォーム／カード／モーダル／テーブル等の **余白・gap・行高** を 8 ポイントグリッドで統一。トークン化された 4/8 倍数、近接（項目間 < グループ間）、クリック領域 40+、垂直 edge と水平 inset の分離。 | スペーシング仕様（トークン + 値） |
 | **artifact-design**（システム配信スキル） | claude.ai Artifact として配信する **単発の HTML ページ**。報告書、可視化、コミュニケーション用の見栄えあるレンダリング。デザインプロセス（パレット brainstorm → 確定 → 構築）と render-verified の仕組み。 | self-contained HTML（外部依存なし） |
 | **vercel:shadcn**（vercel プラグイン経由） | shadcn/ui を使った Next.js コンポーネント実装。CLI、テーマ、custom registry、Tailwind 連携。 | shadcn コマンド + コンポーネント |
@@ -81,7 +84,8 @@ description: >-
   - → **`design-principles`（軽い方向決め）+ `8pt-grid-spacing`（タイポ・余白）** の二段構え。
   - 途中で display type 構成や写真組版が必要になれば `muller-brockmann-grid-systems` に切替。
 - **アプリケーション UI**（操作する、リスト・フォーム・カード・テーブル・モーダルが主体）
-  - → Q4 へ
+  - 依頼の中心が **画面全体の固定 shell／sidebar + main／列 span／グリッド overlay／`G` キーでの表示** → **`fixed-app-grid-debug`** を読む。コンポーネント内部の余白には `8pt-grid-spacing` を併用する。
+  - 局所的な余白や通常のレスポンシブ配置 → Q4 へ
 
 ### Q3.5: 対象は全体構造か、局所要素か？
 
@@ -110,6 +114,7 @@ Q3 でマガジン／LP に分類されたページであっても、依頼が�
 | 依頼の型 | 推奨される読み込み順 |
 |---------|--------------------|
 | SaaS ダッシュボードを作る | `design-principles`（personality・色）→ `8pt-grid-spacing`（コンポーネント余白）→ shadcn 環境なら `vercel:shadcn` |
+| 固定デスクトップグリッドでアプリ全体を組み、`G` で表示する | `fixed-app-grid-debug`（shell・列・overlay）→ `8pt-grid-spacing`（コンポーネント内部） |
 | 既存 UI のレビュー / スペーシング監査 | `8pt-grid-spacing`（4 列テーブル形式で違反洗い出し） |
 | マガジン風ランディングを作る | `muller-brockmann-grid-systems`（グリッド構築）→ 必要なら `8pt-grid-spacing` を内部の小要素に局所適用 |
 | 「Linear っぽくして」と言われた | `design-principles`（Precision & Density を選ぶ）→ `8pt-grid-spacing`（密度高めのトークン選択） |
@@ -128,7 +133,7 @@ Q3 でマガジン／LP に分類されたページであっても、依頼が�
 
 1. **依頼の名詞より「動詞 + 対象」を読む**。「サイドバーの**余白**を整えて」は対象＝余白 → `8pt-grid-spacing`。「サイドバーの **トーン**を Linear 風に」は対象＝トーン → `design-principles`。
    ⚠️ **ただし固有プロダクト名（Linear / Notion / Stripe / Mercury / Vercel / Raycast 等）が依頼に含まれた時点で、Q2 の固有名ルール（二段構え）が優先される**。動詞+対象ルールは固有名が無いときに限り適用する。
-2. **「グリッド」だけで `muller-brockmann` に飛ばない**。アプリ UI で「グリッドに揃える」は多くの場合 8pt スペーシングの話。マガジン／読み物の文脈が無ければ `8pt-grid-spacing`。
+2. **「グリッド」だけで `muller-brockmann` に飛ばない**。アプリ UI の局所的な「グリッドに揃える」は多くの場合 `8pt-grid-spacing`。ただし固定 shell、列数・gutter、領域別 margin、`G` overlay のいずれかが画面全体の要件なら `fixed-app-grid-debug`。
 3. **複数スキルが該当する時は併用 OK**。「Linear 風ダッシュボード作って」は `design-principles` で方向を決めてから `8pt-grid-spacing` で実装値を決めるのが定石。
 4. **迷ったら最も「方向決め」寄りの `design-principles` から読む**。下流のスペーシング決定はその後にいつでも乗る。
 
