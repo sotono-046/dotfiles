@@ -79,8 +79,8 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(before, snapshot(self.home))
 
     def test_replaced_and_legacy_backups_are_retained_outside_discovery(self):
-        self.write_skill('.codex/skills/hatch-pet', 'replaced skill')
-        old = self.write_skill('.codex/skills/hatch-pet.dotbackup.20260827081549', 'older skill')
+        self.write_skill('.codex/skills/git-ops', 'replaced skill')
+        old = self.write_skill('.codex/skills/git-ops.dotbackup.20260827081549', 'older skill')
         ordinary = self.home / '.codex/skills/notes.dotbackup.20260827'
         ordinary.mkdir(parents=True)
         (ordinary / 'notes.txt').write_text('not a skill')
@@ -88,7 +88,7 @@ class InstallTests(unittest.TestCase):
         elsewhere = self.write_skill('other-tree/old.dotbackup.20260827', 'outside skills roots')
         self.run_install('--agent-only')
         self.assertFalse(old.exists())
-        self.assertTrue((self.home / '.codex/skills/hatch-pet').is_symlink())
+        self.assertTrue((self.home / '.codex/skills/git-ops').is_symlink())
         copies = {p.read_text() for p in self.backups.rglob('SKILL.md')}
         self.assertEqual(copies, {'replaced skill', 'older skill'})
         self.assertEqual((ordinary / 'notes.txt').read_text(), 'not a skill')
@@ -99,17 +99,17 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(before, snapshot(self.home))
 
     def test_successive_replacements_never_overwrite_backup_contents(self):
-        self.write_skill('.claude/skills/hatch-pet', 'first copy')
+        self.write_skill('.claude/skills/git-ops', 'first copy')
         self.run_install('--agent-only')
-        (self.home / '.claude/skills/hatch-pet').unlink()
-        self.write_skill('.claude/skills/hatch-pet', 'second copy')
+        (self.home / '.claude/skills/git-ops').unlink()
+        self.write_skill('.claude/skills/git-ops', 'second copy')
         self.run_install('--agent-only')
         copies = [p.read_text() for p in self.backups.rglob('SKILL.md')]
         self.assertCountEqual(copies, ['first copy', 'second copy'])
 
     def test_dry_run_leaves_existing_and_new_homes_unchanged(self):
-        self.write_skill('.codex/skills/hatch-pet', 'replace later')
-        self.write_skill('.codex/skills/hatch-pet.dotbackup.20260827', 'move later')
+        self.write_skill('.codex/skills/git-ops', 'replace later')
+        self.write_skill('.codex/skills/git-ops.dotbackup.20260827', 'move later')
         before = snapshot(self.home)
         result = self.run_install('--agent-only', '--dry-run')
         self.assertIn('.local/state/dotfiles/backups/', result.stdout)
@@ -137,7 +137,7 @@ class InstallTests(unittest.TestCase):
     def test_links_only_and_rejected_target_homes(self):
         self.run_install('--links-only')
         self.assertEqual((self.home / '.zshrc').resolve(), REPO / '.zshrc')
-        self.assertTrue((self.home / '.gemini/skills/hatch-pet').is_symlink())
+        self.assertTrue((self.home / '.gemini/skills/git-ops').is_symlink())
         for target in ('/', '/tmp/../', 'relative-home'):
             self.run_install('--agent-only', '--dry-run', target=target, success=False)
         self.run_install('--agent-only', '--links-only', success=False)

@@ -1,0 +1,4 @@
+interface:
+  display_name: "pen.dev Design"
+  short_description: "pen.dev CLIで視覚デザインとモックを生成する"
+  default_prompt: "$pen-design で pen.dev CLI を使い、依頼どおりの視覚デザインを生成してください。"

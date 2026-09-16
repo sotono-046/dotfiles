@@ -22,8 +22,6 @@
 
 | 旧コマンド | 移行先 |
 | --- | --- |
-| `/IssueMasher` | `issue-masher` |
-| `/PR-check` | `pr-base-sync` |
 | `/wc_WorkingtreeCreaner` | `git-ops` |
 | `/Worktree-Remove` | `git-worktree-safe-audit` |
 
@@ -39,18 +37,15 @@
 | -------------------------- | ---------------------------------------------------------------- |
 | `agent-history-miner`      | Codex / Claude 履歴をboundedに集計し、skill候補を抽出             |
 | `agent-note-writing`       | Obsidian vault への作業メモ・SOW・Issue 下書き保存規約             |
-| `bonginkami`                | 日本語ドキュメント・LP を Noto Sans JP で組む                      |
 | `ci-merge-watch`            | PR の CI 監視・失敗修正・レビュー回収                              |
 | `design`                    | デザイン統括（グリッド・余白・タイポの参照集）                     |
 | `git-ops`                   | Conventional Commits + 日本語 PR テンプレート                     |
 | `git-worktree-safe-audit`   | linked worktreeのread-only監査                                    |
 | `gws-cli`                   | Google Workspace CLI (`gws`) 操作                                 |
-| `opus-codex-orchestration`  | Opus 司令塔 × Codex オペレーターの多重下請け開発（現在 `CLAUDE-agent.md` は退避中のため既定では不使用。詳細は同ファイル参照） |
+| `pen-design`                | pen.dev CLI で視覚デザイン（`.pen` / 画像）を生成。`@pen.dev/cli@0.3.7` の SKILL.md |
 | `plan-digger`               | コード品質・セキュリティ・パフォーマンス検証・SOW 策定の本体      |
 | `task-orchestration`        | Codex / Claudeのruntime別subagent並列運用                          |
 | `herdr`                     | Herdr の pane / agent 操作と本文 + Enter の task packet 送信       |
-| `issue-masher`              | Issue解釈からreview済みSOWと作業branch作成まで                     |
-| `pr-base-sync`              | PR branchをbase最新状態へ安全に同期して検証                        |
 | `review-go-nogo`            | レビューの GO/NO-GO。重大な実害だけ blocker、P2 は follow-up         |
 | `subagent-team`             | Codex / Claudeの常駐subagent adapter                              |
 
