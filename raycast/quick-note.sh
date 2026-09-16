@@ -25,8 +25,25 @@ note_name=$(date +%Y%m%d%H%M%S)
 VAULT="Mitumine"
 TEMPLATE="unique"
 
-obsidian create \
+create_status=0
+output=$(obsidian create \
   vault=${VAULT} \
   path="inbox/${note_name}.md" \
   template=${TEMPLATE} \
-  open newtab
+  open newtab 2>&1) || create_status=$?
+
+case "$output" in
+  *"Vault not found"*)
+    open "obsidian://open?vault=${VAULT}"
+    exit 0
+    ;;
+esac
+
+if [ "$create_status" -ne 0 ]; then
+  printf '%s\n' "$output" >&2
+  exit 1
+fi
+
+# create の template 指定だけでは Templater の <% ... %> は展開されない。
+obsidian command vault="${VAULT}" \
+  id=templater-obsidian:replace-in-file-templater
