@@ -43,3 +43,21 @@ secret、token、cookie、個人/顧客情報はメモへ転載しない。必�
 ## 完了
 
 保存した場合は絶対path、タイトル、要約を返す。外部作成まで依頼された場合は作成先URLと状態を示す。本文作成のみ、保存不能、未実行の外部操作を完了済みと混同しない。
+
+## Hooksによる自動起動
+
+Claude Code / Codex の `Stop` hook を登録するには、次を一度実行する。既存hooksは保持し、変更前の設定を同じdirectoryの `.agent-note-*.bak` に保存する。
+
+```bash
+python3 scripts/install-hooks.py
+# 解除
+python3 scripts/install-hooks.py --remove
+```
+
+コマンドはこのskillのdirectoryで実行する。登録後は新しいセッションで利用する。Codexは `features.hooks` が有効な環境が必要。`install.sh` がClaude設定を置き換えた場合は再登録する。別マシンではそのマシンで登録し直す。
+
+各ターンの応答終了時に、同じ会話のagentへ一度だけ保存を指示する。依頼・応答・判断・現在の状態を短く要約し、質問待ち・進行中・単純な返答も記録する。同じ会話の自動メモへターンごとに時刻付きで追記し、なければ新規作成する。別会話のメモは更新せず、記録済みの同じターンは重複させない。ユーザーの記録不要・read-only・対象限定指示を優先する。自動起動時だけはvaultが使えなければ保存をスキップし、保存先確認を求めない。手動の保存依頼には通常の保存ルールを使う。
+
+`stop_hook_active` で再起動ループを防ぐ。他のStop hookによる継続中もスキップするため、毎回の保存を保証する仕組みではない。保存のため通常は追加のモデル処理が一度発生する。hookはログを読み書きせず、要約と秘匿情報の除外は会話内のagentが行う。`AGENT_NOTE_WRITING_DISABLED=1` を起動環境に設定すると一時停止できる。
+
+仕様: [Claude Code hooks](https://code.claude.com/docs/en/hooks#stop) / [Codex hooks](https://learn.chatgpt.com/docs/hooks#stop)
