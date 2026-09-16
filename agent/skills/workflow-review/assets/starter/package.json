@@ -1,0 +1,1 @@
+{"name":"workflow-review-starter","private":true,"type":"module","engines":{"node":">=22.13.0"},"scripts":{"start":"node local/server.mjs","test":"node --test"}}

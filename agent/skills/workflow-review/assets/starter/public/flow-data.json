@@ -1,0 +1,176 @@
+{
+  "projectId": "sample-workflow-review",
+  "title": "業務フローを確認する",
+  "description": "架空のサンプルです。実在の組織・製品の実装状況を示すものではありません。",
+  "revision": "sample-v1",
+  "flows": [
+    {
+      "id": "request-review",
+      "title": "依頼の受付と確認",
+      "summary": "受付から担当者が確認するまでの対応関係を確認します。",
+      "rows": [
+        {
+          "id": "request-entry",
+          "before": {
+            "id": "request-email",
+            "title": "メールで依頼を受け取る",
+            "role": "human",
+            "status": "unconfirmed",
+            "description": "担当者が受信箱を確認し、依頼内容を読み取ります。",
+            "sources": [
+              {
+                "label": "仮の業務ヒアリング",
+                "reference": "sample:interview/1"
+              }
+            ]
+          },
+          "after": {
+            "id": "request-form",
+            "title": "フォームから受け付ける",
+            "role": "app",
+            "status": "implemented",
+            "description": "入力内容を受付一覧に保存します。サンプル上の実装済み表現です。",
+            "sources": [
+              {
+                "label": "仮の画面仕様",
+                "reference": "sample:screen/1"
+              }
+            ]
+          }
+        },
+        {
+          "id": "request-check",
+          "before": {
+            "id": "request-human-check",
+            "title": "必須情報の記入漏れを確認する",
+            "role": "human",
+            "status": "unconfirmed",
+            "description": "担当者が依頼に必要な項目が記入されているか確認します。",
+            "sources": []
+          },
+          "after": {
+            "id": "request-validation",
+            "title": "必須項目をチェックする",
+            "role": "app",
+            "status": "planned",
+            "description": "必須入力を確認する予定です。内容の妥当性は担当者が判断します。",
+            "sources": [
+              {
+                "label": "仮の計画",
+                "reference": "sample:plan/1"
+              }
+            ]
+          }
+        },
+        {
+          "id": "request-judgment",
+          "before": {
+            "id": "request-judgment-before",
+            "title": "内容の妥当性を判断する",
+            "role": "human",
+            "status": "unconfirmed",
+            "description": "担当者が業務上の判断を行います。",
+            "sources": []
+          },
+          "after": {
+            "id": "request-judgment-after",
+            "title": "内容の妥当性を判断する",
+            "role": "human",
+            "status": "planned",
+            "description": "導入後も担当者が判断します。ここは人の作業として残す想定です。",
+            "sources": [
+              {
+                "label": "仮の運用方針",
+                "reference": "sample:operations/1"
+              }
+            ]
+          }
+        }
+      ],
+      "gaps": [
+        {
+          "id": "request-exception",
+          "title": "例外の受付方法が未確認",
+          "description": "フォームを使えない依頼者への対応を確認する必要があります。",
+          "status": "unconfirmed",
+          "sources": []
+        }
+      ]
+    },
+    {
+      "id": "monthly-report",
+      "title": "月次報告の作成",
+      "summary": "集計と報告の作業を分けて確認します。",
+      "rows": [
+        {
+          "id": "report-aggregate",
+          "before": {
+            "id": "report-spreadsheet",
+            "title": "表計算で集計する",
+            "role": "human",
+            "status": "unconfirmed",
+            "description": "担当者が複数のファイルを集約します。",
+            "sources": [
+              {
+                "label": "仮の業務メモ",
+                "reference": "sample:notes/2"
+              }
+            ]
+          },
+          "after": {
+            "id": "report-auto",
+            "title": "期間を選んで集計する",
+            "role": "app",
+            "status": "planned",
+            "description": "対象期間の受付データを集計する予定です。",
+            "sources": [
+              {
+                "label": "仮の計画",
+                "reference": "sample:plan/2"
+              }
+            ]
+          }
+        },
+        {
+          "id": "report-share",
+          "before": {
+            "id": "report-mail",
+            "title": "上長へ報告する",
+            "role": "human",
+            "status": "unconfirmed",
+            "description": "集計表に所見を添えて共有します。",
+            "sources": []
+          },
+          "after": {
+            "id": "report-review",
+            "title": "所見を確認して共有する",
+            "role": "human",
+            "status": "planned",
+            "description": "担当者が集計結果と所見を確認し、共有する想定です。",
+            "sources": []
+          }
+        }
+      ],
+      "gaps": [
+        {
+          "id": "report-export",
+          "title": "出力形式を決める",
+          "description": "閲覧画面だけでよいか、ファイル出力が必要かは未確認です。",
+          "status": "unconfirmed",
+          "sources": []
+        }
+      ]
+    }
+  ],
+  "gaps": [
+    {
+      "id": "request-to-report",
+      "fromFlowId": "request-review",
+      "toFlowId": "monthly-report",
+      "title": "受付結果を月次報告へ引き渡す",
+      "description": "どの受付状態を集計対象にするか、月末締め後の修正をいつ反映するかは未確認です。",
+      "status": "unconfirmed",
+      "sources": []
+    }
+  ]
+}

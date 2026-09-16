@@ -1,0 +1,4 @@
+interface:
+  display_name: "業務フロー・HTMLフィードバック"
+  short_description: "業務フロー比較とHTML要素へのコメントを共有DB付きで作成する"
+  default_prompt: "$workflow-review で業務フローのBefore/Afterと、要素に紐づくコメント機構をローカルに作成してください。"

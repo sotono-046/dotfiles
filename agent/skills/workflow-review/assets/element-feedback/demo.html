@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>既存HTMLへの要素コメント例</title>
+<style>body{max-width:720px;margin:48px auto;padding:20px;font:16px/1.7 system-ui;color:#203345}section{padding:24px;background:#f1f5f8;border-radius:12px;margin:24px 0}button,input{font:inherit;padding:8px}a{color:#1269ad}</style></head>
+<body><main><h1 data-feedback-id="demo-title">既存のページにコメントを追加</h1><p>右下の「要素にコメント」から対象を選べます。</p>
+<section data-feedback-id="demo-card"><h2>サービスの紹介</h2><p data-feedback-id="demo-description">この説明文に対する改善案を残してください。</p><a id="demo-link" href="#destination">通常のリンク（選択中は移動しません）</a></section>
+<section><h2>操作・プライバシー確認</h2><button id="demo-action" onclick="document.getElementById('demo-result').textContent='通常操作は有効です'">通常のボタン</button><p id="demo-result" aria-live="polite"></p>
+<form onsubmit="event.preventDefault();document.getElementById('demo-result').textContent='フォームを送信しました'"><label>入力情報（要素コメントには収集しません） <input id="demo-private" value="private example"></label><button type="submit" id="demo-submit">送信</button></form></section>
+<p id="destination">リンクの移動先</p></main>
+<script type="module">
+  import {initElementFeedback} from './element-feedback.js';
+  // scaffoldの業務フローと同じproject/revisionへ保存します。
+  // 単独配信では先に window.elementFeedbackConfig = {projectId, revision} を設定できます。
+  try {
+    const config = window.elementFeedbackConfig || await fetch('../flow-data.json').then(response => {
+      if (!response.ok) throw new Error('flow-data.jsonを読み込めません');
+      return response.json();
+    });
+    initElementFeedback({projectId: config.projectId, revision: config.revision, apiBase: '/api', enabled: true});
+  } catch (error) {
+    const message = document.createElement('p');
+    message.setAttribute('role', 'alert');
+    message.textContent = `要素コメントを初期化できません：${error.message}。単独配信ではwindow.elementFeedbackConfigにprojectIdとrevisionを設定してください。`;
+    document.querySelector('main').append(message);
+  }
+</script></body></html>

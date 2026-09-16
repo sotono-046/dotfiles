@@ -1,0 +1,9 @@
+{
+  "name": "workflow-review-example",
+  "main": "worker.mjs",
+  "compatibility_date": "2025-01-24",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true, "html_handling": "none" },
+  "d1_databases": [{ "binding": "DB", "database_name": "REPLACE_WITH_APPROVED_DATABASE", "database_id": "REPLACE_WITH_APPROVED_ID", "migrations_dir": "migrations" }]
+}

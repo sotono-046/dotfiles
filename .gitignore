@@ -8,6 +8,7 @@ claudecode/skills/skill-creator
 claudecode/skills/frontend-design
 .serena/
 .temp/
+.wrangler/
 agent/skills/**/*.zip
 
 
