@@ -6,7 +6,7 @@
 
 固定配役表のモデルを指定できる場合はnative subagentを優先する。Codexのcollaboration、Claude CodeのAgent/Task等、実際に公開された機能を使う。モデルoverrideが許可されていなければ、固定配役表の利用不可時のルールに従う。
 
-Codexのnative collaborationにClaudeのモデルIDを渡さない。Codex親からFable・Opusへは外部Claude CLIまたは接続済みのClaude委譲機能を使い、Claude親からAstra・Lunaへも外部Codexの経路を使う。モデルが利用可能という説明だけでは、native toolがそのモデルを受け付けることを意味しない。`fork_turns`等のruntime固有引数も外部経路に移植しない。
+Codexのnative collaborationにClaudeのモデルIDを渡さない。Codex親からFable・Opus 5.5へは外部Claude CLIまたは接続済みのClaude委譲機能を使い、Claude親からSol・Luna・Astraへは外部Codexの経路を使う。モデルが利用可能という説明だけでは、native toolがそのモデルを受け付けることを意味しない。`fork_turns`等のruntime固有引数も外部経路に移植しない。
 
 同梱されていれば [task-orchestration](../../task-orchestration/SKILL.md) の担当分割・runtime adapterを利用できる。なくても、本体の委譲packetと公開schemaで進められる。別のCodexユーザータスクを作成する機能は、内部subagentの代用にしない。
 
@@ -19,8 +19,8 @@ Codexのnative collaborationにClaudeのモデルIDを渡さない。Codex親か
 ### CLIで保持するもの
 
 - 入力: 委譲packetをファイルに保存しstdinで渡す。本文をshell commandへ補間しない。
-- モデル: installed helpで対応を確認し、CLIでは `--model` に固定配役表のIDを渡す。native toolでも対応するmodel引数を使う。応答に実行モデルがあれば指定と照合し、不一致を隠さない。
-- Luna High: Codex CLIでは `--model gpt-5.6-luna -c 'model_reasoning_effort="high"'` を使う。native toolでは `model` と対応するreasoning引数に `high` を指定する。現在のschemaで指定可能なことを確認し、指定できなければ利用不可として扱う。
+- モデル: installed helpで対応を確認し、CLIでは `--model` に固定配役表のIDを渡す。native toolでも対応するmodel引数を使う。応答に実行モデルがあれば指定と照合し、不一致を隠さない。Opus 5.5は正確なIDまたは5.5へ解決されると確認できたaliasだけを使う。
+- Codex配役: Solは`--model gpt-5.6-sol`、Luna Highは`--model gpt-5.6-luna -c 'model_reasoning_effort="high"'`、Astraは`--model gpt-6-astra`を使う。native toolでは対応するmodel引数を指定する。現在のschemaで指定可能なことを確認し、指定できなければ利用不可として扱う。
 - 作業場所: Codexは対応する `--cd`、Claudeは起動プロセスのcwdを明示する。既存のdirty差分を事前確認する。
 - 出力: Codexの `--json` / `--output-last-message`、Claudeの `--print` / `--output-format json` 等、installed helpで確認できた機能を使う。
 - 継続: 応答のsession IDとプロセス状態を保存する。再開構文もhelpで確認し、他の作業を拾う `--last` 等より明示IDを使う。
