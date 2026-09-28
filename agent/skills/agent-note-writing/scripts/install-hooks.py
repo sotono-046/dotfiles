@@ -8,20 +8,21 @@ import shutil
 from datetime import datetime
 
 
-def install(path, script, remove=False):
+def install(path, script, runtime, remove=False):
     path = path.resolve()
     data = json.loads(path.read_text()) if path.exists() else {}
     hooks = data.setdefault('hooks', {})
     groups = hooks.get('Stop', [])
-    command = f'python3 {shlex.quote(str(script))}'
+    legacy_command = f'python3 {shlex.quote(str(script))}'
+    command = legacy_command + ' --runtime ' + runtime
     updated = []
     for group in groups:
         kept = [h for h in group.get('hooks', [])
-                if h.get('command') != command]
+                if h.get('command') not in (command, legacy_command)]
         if kept:
             updated.append({**group, 'hooks': kept})
     if not remove:
-        updated.append({'hooks': [{'type': 'command', 'command': command, 'timeout': 5}]})
+        updated.append({'hooks': [{'type': 'command', 'command': command, 'timeout': 240, 'async': True}]})
     if updated == groups:
         print(f'unchanged: {path}')
         return
@@ -43,7 +44,7 @@ def main():
     args = parser.parse_args()
     script = Path(__file__).resolve().with_name('stop-hook.py')
     for name in ('.claude/settings.json', '.codex/hooks.json'):
-        install(args.home / name, script, args.remove)
+        install(args.home / name, script, 'claude' if name.startswith('.claude') else 'codex', args.remove)
 
 
 if __name__ == '__main__':

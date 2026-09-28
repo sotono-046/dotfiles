@@ -56,18 +56,16 @@ python3 scripts/install-hooks.py --remove
 
 コマンドはこのskillのdirectoryで実行する。登録後は新しいセッションで利用する。Codexは `features.hooks` が有効な環境が必要。`install.sh` がClaude設定を置き換えた場合は再登録する。別マシンではそのマシンで登録し直す。
 
-各ターンの応答終了時に、同じ会話の親agentへ一度だけ保存の委譲を指示する。依頼・応答・判断・現在の状態を短く要約し、質問待ち・進行中・単純な返答も記録する。同じ会話の自動メモへターンごとに時刻付きで追記し、なければ新規作成する。別会話のメモは更新せず、記録済みの同じターンは重複させない。ユーザーの記録不要・read-only・対象限定指示を優先する。自動起動時だけはvaultが使えなければ保存をスキップし、保存先確認を求めない。手動の保存依頼には通常の保存ルールを使う。
+各ターンの応答終了時に非同期command hookが独立CLIを起動する。Codexでは Luna（`gpt-6-luna`）、Claude Codeでは Sonnet（`sonnet`）を指定する。親会話の再開・継続指示・保存報告は行わず、メインの最終回答を保つ。アプリ内のsubagentではなく、保存専用の別プロセスである。
 
-`stop_hook_active` で再起動ループを防ぐ。他のStop hookによる継続中もスキップするため、毎回の保存を保証する仕組みではない。保存のため親の継続処理とサブエージェントのモデル処理が発生する。hookはログを読み書きせず、要約と秘匿情報の除外は委譲先が行う。`AGENT_NOTE_WRITING_DISABLED=1` を起動環境に設定すると一時停止できる。
+### 非同期の自動保存
 
-仕様: [Claude Code hooks](https://code.claude.com/docs/en/hooks#stop) / [Codex hooks](https://learn.chatgpt.com/docs/hooks#stop)
+- hookは直前のユーザー入力と最終応答だけを要約へ渡す。tool出力・全会話ログは渡さない。transcript末尾を最大2 MBだけ読み、ユーザー入力が確認できなければスキップする。
+- 要約側のhooksを無効化し、再帰起動を防ぐ。Claudeはtoolを無効化、Codexは一時directoryでread-only実行する。モデルにファイル編集を任せず、JSON要約を受けたscriptが既存vaultの `_agent/yy/mm/` へ書く。
+- 短い返答・質問待ちも保存対象。記録不要・read-only・対象限定の指示を優先し、secret・個人/顧客情報・内部URLは要約へ残さない。保存先は既定vault、または起動環境の `AGENT_NOTE_VAULT` で指定された既存directory。会話中だけの保存先変更は自動反映されない。
+- runtimeとsessionの識別子から会話ごとのメモを管理し、turn識別子（ない場合は入力と応答のhash）で重複を防ぐ。同一会話はlockで直列化する。以前の親agent方式のメモは自動で探して更新しない。
+- 状態と保存pathは `~/.local/state/agent-note-writing/*.json` に残す。失敗時は例外の種類だけ記録し、メイン会話への警告や別モデルへの切替はしない。要約実行は150秒で打ち切る。
+- vaultが存在しない場合は新設せずスキップ。`AGENT_NOTE_WRITING_DISABLED=1` で一時停止する。手動の保存依頼には通常の保存ルールを使う。
+- セッション終了による非同期hookの中断、CLIの認証・モデル利用制限、transcript形式の変更で保存されない場合がある。毎回の保存を保証する永続queueではない。
 
-
-### 自動保存の委譲
-
-- 親は専用サブエージェント1体へ保存を任せる。runtimeで利用可能な委譲toolのschemaに従い、Codexでは Luna（`gpt-5.6-luna`）、Claude Codeでは Sonnet（`sonnet`）を明示指定する。モデル指定のために履歴forkが制限されるruntimeでは、履歴継承なしで下記の情報を渡す。子からの再委譲は禁止する。
-- 親からこのSKILL.mdの絶対path、作業directory、直前ターンの依頼・応答・判断・現在の状態、ユーザーの保存制約、既知の同一会話のメモpathを渡す。利用可能なら親のsession/turn識別子も渡す。子の会話履歴継承を前提にせず、生ログや秘密情報を渡さない。
-- 子は上記の各ターン保存ルールに従い、既存vaultの今回のメモだけを編集する。repoはコンテキスト確認のためのread-onlyとし、Git操作・設定変更・外部送信・Issue作成を行わない。保存した絶対path・タイトル・一行要約、または保存しなかった理由を返す。
-- 同じ会話のメモは同時に複数の子へ書かせない。親は保存結果を待って確認し、保存した場合だけpathと一行要約を報告する。次のターンでも返却されたpathを引き継ぐ。
-- 委譲toolがない・枠が空かない・指定モデルが利用できない場合は、別モデルへ黙って切り替えず親が同じルールで保存する。vaultや書込権限が使えない場合は自動保存をスキップし、権限を拡張したり保存先確認だけで会話を止めたりしない。
-- この方式でもStop hookから親への継続指示は発生する。親の会話に指示を出さず独立して動くバックグラウンド処理ではない。
+仕様: [Claude Code hooks](https://code.claude.com/docs/en/hooks#run-hooks-in-the-background) / [Codex hooks](https://learn.chatgpt.com/docs/hooks#run-hooks-in-the-background)
