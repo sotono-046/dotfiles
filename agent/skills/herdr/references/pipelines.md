@@ -40,8 +40,8 @@ pane の split / rename / `agent start` / role packet・task packet の送信手
 | 階層 | 既定モデル | effort | 責務 |
 | --- | --- | --- | --- |
 | Supervisor | Claude Opus 5 (`claude-opus-5`) | high | 全 pipeline の監視、品質・予算・依存関係、最終 GO / NO-GO |
-| Commander | GPT-5.6 Sol (`gpt-5.6-sol`) | high | 設計具体化、task 分解・配信、一次 review、fix-loop 統括 |
-| Specialist / Implementer / Researcher / Validator | GPT-5.6 Luna (`gpt-5.6-luna`) | high | 実装、調査、検証、harness の担当 scope 実行 |
+| Commander | GPT-6 Sol (`gpt-6-sol`) | high | 設計具体化、task 分解・配信、一次 review、fix-loop 統括 |
+| Specialist / Implementer / Researcher / Validator | GPT-6 Luna (`gpt-6-luna`) | high | 実装、調査、検証、harness の担当 scope 実行 |
 
 - Supervisor は Commander と実行層を束ねる。自分で実装しない。
 - Commander は workstream を管理し、実行層の成果を検算して Supervisor へ判定案を返す。原則として実装しない。

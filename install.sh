@@ -430,6 +430,7 @@ install_agent_links() {
     "agent/CLAUDE.md:$DOTFILES_HOME/.claude/CLAUDE.md"
     "agent/AGENTS.md:$DOTFILES_HOME/.codex/AGENTS.md"
     "agent/AGENTS.md:$DOTFILES_HOME/.gemini/GEMINI.md"
+    "agent/AGENTS.md:$DOTFILES_HOME/.pi/agent/AGENTS.md"
     "agent/agents:$DOTFILES_HOME/.claude/agents"
     "agent/settings.json:$DOTFILES_HOME/.claude/settings.json"
   )
@@ -441,6 +442,7 @@ install_agent_links() {
   install_skill_links "$DOTFILES_HOME/.claude/skills" claude
   install_skill_links "$DOTFILES_HOME/.codex/skills" codex
   install_skill_links "$DOTFILES_HOME/.gemini/skills" gemini
+  install_skill_links "$DOTFILES_HOME/.pi/agent/skills" pi
 }
 
 main() {

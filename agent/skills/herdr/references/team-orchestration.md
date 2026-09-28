@@ -37,9 +37,9 @@
 | pane | 役割 | 起動コマンド |
 | --- | --- | --- |
 | 左上 | 司令塔 | 自分（Claude Code。Opus / Fable 級を推奨） |
-| 右上 | レビュー | `codex -m gpt-5.6-sol -c model_reasoning_effort=high` |
+| 右上 | レビュー | `codex -m gpt-6-sol -c model_reasoning_effort=high` |
 | 左下 | ハーネス | `codex -m gpt-5.3-codex-spark -c model_reasoning_effort=high` |
-| 右下 | 実行役1 | `codex -m gpt-5.6-luna -c model_reasoning_effort=high` |
+| 右下 | 実行役1 | `codex -m gpt-6-luna -c model_reasoning_effort=high` |
 
 グリッドの構築手順。各 split の応答 JSON から新しい pane_id を読み、rename → `agent start` の順で埋める。
 
@@ -50,7 +50,7 @@ herdr pane split --pane "$HERDR_PANE_ID" --direction down --ratio 0.5 --no-focus
 herdr pane split --pane <右上pane> --direction down --ratio 0.5 --no-focus   # → 右下
 
 herdr pane rename <右上pane> "レビュー"
-herdr agent start reviewer --kind codex --pane <右上pane> -- -m gpt-5.6-sol -c model_reasoning_effort=high
+herdr agent start reviewer --kind codex --pane <右上pane> -- -m gpt-6-sol -c model_reasoning_effort=high
 # ハーネス・実行役1 も同様に rename → agent start
 ```
 
