@@ -64,6 +64,7 @@ _scan_repo_choices() {
         if [[ -d "$HOME/dotfiles/.git" ]]; then
             printf '~/dotfiles\t%s\n' "$HOME/dotfiles"
         fi
+
     } | awk -F '\t' '!seen[$2]++'
 }
 
@@ -87,7 +88,7 @@ _repo_cache_is_fresh() {
 
 # Git リポジトリ候補をキャッシュ経由で出力する内部関数
 # 第2引数が refresh の場合はキャッシュを使わず再走査する
-_repo_choices() {
+_cached_repo_choices() {
     local work_dir="${1:-$WORK_DIR}"
     local refresh="${2:-}"
     local cache_file
@@ -107,6 +108,22 @@ _repo_choices() {
         rm -f "$cache_tmp"
         return 1
     fi
+}
+
+# ghq はキャッシュせず取得し、作成直後の repo や複数 root も候補に含める。
+_repo_choices() {
+    local cached_choices
+    cached_choices=$(_cached_repo_choices "$@") || return 1
+    {
+        printf '%s\n' "$cached_choices"
+        if command -v ghq >/dev/null 2>&1; then
+            local ghq_path
+            while IFS= read -r ghq_path; do
+                [[ -n "$ghq_path" && -e "$ghq_path/.git" ]] || continue
+                printf 'ghq/%s/%s\t%s\n' "${ghq_path:h:t}" "${ghq_path:t}" "$ghq_path"
+            done < <(ghq list --full-path)
+        fi
+    } | awk -F '\t' 'NF >= 2 && !seen[$2]++'
 }
 
 # fzf でリポジトリを選び、worktree が複数あればブランチも選択してパスを返す
