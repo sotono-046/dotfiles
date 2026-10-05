@@ -1,6 +1,6 @@
 # MCP サーバー定義（マシンローカル）
 
-Claude Code / Codex の MCP サーバー設定は `~/.claude.json`（user scope）と `~/.codex/config.toml` にのみ存在し、dotfiles リポジトリでは管理していない。理由は secret（トークン）を含むため。このファイルは再構築手順のドキュメントであり、値そのものは書かない。
+Claude Code / Codex / PiのMCPサーバー設定はmachine-localで管理する。設定先は`~/.claude.json`（user scope）、`~/.codex/config.toml`、`~/.pi/agent/mcp.json`。トークンを含むため、設定ファイル全体はdotfilesで管理しない。この文書には復元手順を記載し、秘密情報そのものは書かない。
 
 ## Claude Code（`~/.claude.json` の `mcpServers`）
 
@@ -49,3 +49,19 @@ config.toml は dotfiles 管理外（アプリ・認証情報が絡むため）�
 ## Gemini（`~/.gemini/settings.json` の `mcpServers`）
 
 `pencil` のみ登録。dotfiles 管理外。
+
+## UI registries（Claude Code / Codex / Pi共通）
+
+`design`スキルのKibo UI・Aceternity UI・blocks.so・shadcn公式Registry Directory用に、公式の`shadcn` MCPを登録する。共通のregistry機能で扱えるため、ライブラリごとのMCPは追加しない。
+
+```bash
+claude mcp add --transport stdio --scope user shadcn -- npx -y shadcn@latest mcp
+codex mcp add shadcn -- npx -y shadcn@latest mcp
+pi mcp add shadcn --description 'Kibo UI・Aceternity UI・blocks.soを含むshadcn互換registryの部品検索・確認・導入' -- npx -y shadcn@latest mcp
+```
+
+Piはnative MCP対応版が対象。`pi mcp --help`で利用可否を確認する。設定は`~/.pi/agent/mcp.json`の`mcpServers.shadcn`へ保存される。追加のMCP bridge extensionは不要。
+
+Claude Code / Codexは追加後に再起動する。Piは`/reload`または新しいセッションで読み直し、`pi mcp list`で接続を確認できる。user scopeで登録し、MCPの作業ディレクトリを特定のアプリへ固定しない。対象アプリの`components.json`へ追加するregistryは [designの利用手順](skills/design/references/ui-registries.md) を参照する。
+
+一次資料: [shadcn MCP](https://ui.shadcn.com/docs/mcp)、[Codex MCP](https://developers.openai.com/codex/mcp)。Piの設定とCLIはインストール版の`docs/mcp.md`と`pi mcp --help`で確認する。

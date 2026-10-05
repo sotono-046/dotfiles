@@ -1,11 +1,26 @@
 ---
 name: design
-description: UIの方向性、余白、ページやアプリのグリッドを設計・調整する。既存デザインシステムを優先し、局所修正に必要な専門参照を選ぶ。
+description: UIの方向性、余白、ページやアプリのグリッドを設計・調整する。既存デザインシステムを優先し、Kibo UI・Aceternity UI・blocks.so・shadcn公式Registry Directoryから用途に合う部品を選ぶ。
 ---
 
 # Design
 
 ユーザーが求める視覚的な変更を、既存のコンポーネント・トークン・実画面に合わせて行う。色値や文言の指定どおりの置換など、判断が不要なら参照を追加せず実行する。
+
+## UI部品の選び方
+
+新しい画面や部品を作るときは、既存実装を確認したうえで次の候補を優先する。用途に合うものだけ採用し、複数ライブラリの併用を必須にしない。
+
+| 用途 | 優先する候補 |
+|---|---|
+| 表・ファイル操作・カレンダー・AI UIなど、機能を持つ複合部品 | [Kibo UI](https://www.kibo-ui.com/) |
+| Hero・背景・カード・スクロールなど、動きや視覚的な演出 | [Aceternity UI](https://ui.aceternity.com/) |
+| ログイン・フォーム・ダッシュボードなど、画面やセクションの構成 | [blocks.so](https://blocks.so/) |
+| 上記で足りない部品や別の用途に合うregistryの探索 | [shadcn公式Registry Directory](https://ui.shadcn.com/docs/directory) |
+
+React・Tailwind CSS・shadcn/uiの構成で実装する場合に、この候補を使う。既存stackが異なる場合は構成や見た目の参考として使い、stackの置換は依頼の範囲に従う。採用した部品は既存の色・タイポ・余白に合わせ、演出は可読性・操作性・reduced motionを考慮して調整する。
+
+部品を探す・導入する場合は [UI registriesの利用手順](references/ui-registries.md) を読む。利用可能なら共通の`shadcn` MCPを使い、MCPが使えない環境では公式CLIやソースを使って進める。Directoryはコミュニティregistryの探索先であり、掲載部品をすべてshadcn公式製として扱わない。
 
 ## 必要な参照を選ぶ
 
