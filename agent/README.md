@@ -37,6 +37,7 @@
 | -------------------------- | ---------------------------------------------------------------- |
 | `agent-history-miner`      | Codex / Claude 履歴をboundedに集計し、skill候補を抽出             |
 | `agent-note-writing`       | Obsidian vault への作業メモ・SOW・Issue 下書き保存規約             |
+| `notify-result`            | 明示依頼・リーダー指名時だけ、確認済みの結果を一度通知する          |
 | `ci-merge-watch`            | PR の CI 監視・失敗修正・レビュー回収                              |
 | `design`                    | デザイン統括（グリッド・余白・タイポの参照集）                     |
 | `git-ops`                   | Conventional Commits + 日本語 PR テンプレート                     |
@@ -54,8 +55,12 @@
 Claude Code の設定ファイル（`~/.claude/settings.json` に配信）。
 
 - 権限設定（allow/deny/ask）
-- hooks 設定（Notification / Stop の通知音）
+- hooks 設定（状態報告用hookを保ち、通常の通知音hookは置かない）
 - enabledPlugins / extraKnownMarketplaces
+
+通常のterminal通知とRemote Controlの自動pushはOFF。明示的に「終わったら教えて」と頼んだ作業や、指名されたリーダーの集約結果は `notify-result` で一度通知する。Orca自身の自動通知は別設定なので、[通知の抑制・配信手順](skills/notify-result/references/quiet-notifications.md)を参照する。
+
+Codex・piの質問と承認待ちには、`agent/notifications/` のhookで `Pop` を鳴らす。完了音を戻す設定ではない。質問音も止めるセッションは `AGENT_QUESTION_SOUND=off` で起動する。導入方法とCodexのhook信頼確認は上記の手順を参照する。
 
 通常起動は `defaultMode=auto`。読み取り系 tool に加え、push・merge・deploy・削除コマンドも `allow` に登録し、`ask` は sudo に設定している。`auto` でも明示的な allow は classifier より前に適用されうるため、通常設定を読み取り専用として扱わない。
 

@@ -1,36 +1,36 @@
 # 実行経路
 
-呼び出し元に公開されたtool schemaとinstalled CLIのhelpを優先する。スキルはruntimeの権限を追加しない。
+呼び出し元に公開されたtool schemaとinstalled CLIのhelpを優先する。スキルはruntimeの権限を追加しない。モデルとeffortは [配役](model-routing.md) に従う。
 
-## 実行経路の優先順位
+## Orcaを優先する
 
-分担が有効でOrcaを利用できる場合は、`orchestration` スキルに従ってOrcaのworker配信・完了待ち・結果統合を優先する。worktree・terminal操作は `orca-cli` を参照する。Orcaの実状態をnative subagentで代用しない。
+Orcaを利用でき、分担が有効なら、利用可能な `orchestration` スキルでworker配信・完了待ち・結果統合を行う。worktree・terminal操作は `orca-cli` を参照する。CLIが提供するversionに合うガイドを読み、モデル・effort指定が必要なときはlaunch設定のreferenceも確認する。
+
+主なworkerは `codex`、Opus分析は `claude` を選ぶ。現在のCLIが対応していれば、worker起動の `--model`・`--effort` に確認済みのIDと設定を渡す。今回のモデル・effort指定は起動設定に適用し、`launch.requested` と `launch.effective` が返る場合は照合する。piへ自動で置換しない。
+
+base branchやworktreeの指定は新しい作業場所を用意するときに適用する。既存のworkerを再利用する場合は、同じcheckout・model・effortで要件を満たすことを確認する。OrcaのRun・Task・Dispatch・worker_doneをnative subagentの完了で代用しない。
 
 ## 同一runtime内
 
-Orcaを利用できない場合に、固定配役表のモデルを指定できればnative subagentを使う。Codexのcollaboration、Claude CodeのAgent/Task等、実際に公開された機能を使う。モデルoverrideが許可されていなければ、固定配役表の利用不可時のルールに従う。
+Orcaを利用できない場合、またはOrcaの実状態を扱わない単独のスキル検査などでは、公開されたnative subagentを使える。同梱の [task-orchestration](../../task-orchestration/SKILL.md) で担当分割・runtime adapterを確認する。
 
-Codexのnative collaborationにClaudeのモデルIDを渡さない。Codex親からFable・Opus 5.5へは外部Claude CLIまたは接続済みのClaude委譲機能を使い、Claude親からSol・Luna・Astraへは外部Codexの経路を使う。モデルが利用可能という説明だけでは、native toolがそのモデルを受け付けることを意味しない。`fork_turns`等のruntime固有引数も外部経路に移植しない。
+Codexのnative collaborationには、そのschemaにあるCodex model IDだけを渡す。司令塔とレビュアーは最新の利用可能なSolとreasoning effort `high` を指定する。model override時の `fork_turns` の制約は現在のschemaで確認し、独立レビューは別コンテキストで行う。プロンプトに「Sol High」と書くだけで設定済みとしない。
 
-同梱されていれば [task-orchestration](../../task-orchestration/SKILL.md) の担当分割・runtime adapterを利用できる。なくても、本体の委譲packetと公開schemaで進められる。別のCodexユーザータスクを作成する機能は、内部subagentの代用にしない。
+ClaudeのモデルIDをCodexのnative toolへ渡さない。CodexからOpusへは外部Claude CLIまたは接続済みの委譲機能、ClaudeからSol・Luna・Astraへは対応する外部Codex経路を使う。model/reasoning引数やruntime固有の設定を別製品へ移植しない。
 
-## ClaudeとCodexをまたぐ場合
+## ClaudeとCodexをまたぐ
 
-1. 接続済みのMCP・プラグイン等に委譲機能が公開されていれば、そのschemaに従う。名称だけで存在を仮定せず、継続IDと結果取得手段を確認する。
-2. なければ外部CLIを確認する。Claudeからは `codex exec --help`、Codexからは `claude --help` を読み、cwd固定・安全なstdin・結果保存・状態追跡が可能な構成を使う。
-3. 外部CLIがない、ログインできない、または現行権限で動かない場合は事実を伝え、固定配役表の利用不可時のルールに従う。
+接続済みの委譲機能があればそのschemaに従う。なければ `codex exec --help` または `claude --help` でcwd固定、stdin入力、結果保存、状態追跡、モデル設定の構文を確認する。
 
-### CLIで保持するもの
+| 保持するもの | 操作上の条件 |
+| --- | --- |
+| 入力 | 委譲packetをファイルに保存しstdinで渡す。未信頼本文をshell commandへ補間しない |
+| モデル・effort | 起動時に確認したmodel IDと対応するeffort設定を使う。CLIでは `--model` 等の現行helpで確認した引数を使う |
+| 作業場所 | cwdを絶対pathで固定し、branch/HEAD・既存差分を事前確認する |
+| 出力・継続 | JSONや最終回答の保存先、session IDとプロセス状態を保持する。再開はhelpで確認した明示IDを使う |
+| 権限 | read-only担当には対応するsandboxや実効的なtool制限を使う。実装も元の認可範囲を超えない |
+| 待機 | process/sessionを追跡して短くyieldする。timeoutは成果・状態を確認する時点として扱い、重複実行しない |
 
-- 入力: 委譲packetをファイルに保存しstdinで渡す。本文をshell commandへ補間しない。
-- モデル: installed helpで対応を確認し、CLIでは `--model` に固定配役表のIDを渡す。native toolでも対応するmodel引数を使う。応答に実行モデルがあれば指定と照合し、不一致を隠さない。Opus 5.5は正確なIDまたは5.5へ解決されると確認できたaliasだけを使う。
-- Codex配役: Solは`--model gpt-6-sol`、Luna Highは`--model gpt-6-luna -c 'model_reasoning_effort="high"'`、Astraは`--model gpt-6-astra`を使う。native toolでは対応するmodel引数を指定する。現在のschemaで指定可能なことを確認し、指定できなければ利用不可として扱う。
-- 作業場所: Codexは対応する `--cd`、Claudeは起動プロセスのcwdを明示する。既存のdirty差分を事前確認する。
-- 出力: Codexの `--json` / `--output-last-message`、Claudeの `--print` / `--output-format json` 等、installed helpで確認できた機能を使う。
-- 継続: 応答のsession IDとプロセス状態を保存する。再開構文もhelpで確認し、他の作業を拾う `--last` 等より明示IDを使う。
-- 権限: read-only担当には対応するsandboxまたは実効的なtool制限を設定する。プロンプトの「編集禁止」だけを技術的な隔離と呼ばない。実装担当も元の認可範囲を超えず、bypass系flagで起動失敗を回避しない。
-- 待機: ホストのprocess/session追跡で短くyieldし、有限の実行期限を設ける。期限時はまず状態と成果物を確認し、停止が必要ならこの担当のプロセスだけを対象にする。
+確認時点のSol HighのCodex CLI例は `--model gpt-6.1-sol -c 'model_reasoning_effort="high"'`。実行時は最新の利用可能なSol IDへ置き換える。native toolでは対応する `model`・`reasoning_effort` 引数を使う。OpusはCLIが最新モデルのaliasと説明する `--model opus`、または確認済みの完全なIDを使う。
 
-CLI認証方式は製品のstatus/help等で確認し、secretやtokenそのものを読んで報告しない。既存のAPI認証からサブスク認証への切替や追加インストールが必要でも、このスキルの利用だけを変更許可と解釈しない。
-
-Fuguを追加するのはユーザーがその利用を求め、利用可能な接続と費用・データ送信範囲が明らかな場合。現在のClaude/Codex契約をFuguにそのまま流用できるとは仮定しない。
+認証方式は製品のstatus/help等で確認し、secretやtoken自体を出力しない。サブスク枠が指定されている場合は対応する既存のログイン経路を使い、API課金や新規契約へ暗黙に切り替えない。起動失敗をbypass系flagで回避しない。

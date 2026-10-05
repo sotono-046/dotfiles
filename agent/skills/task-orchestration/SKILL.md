@@ -9,10 +9,13 @@ description: 独立した調査・実装・検証をサブエージェントへ�
 
 ## 起動前
 
+モデルと役割は [adaptive-orchestrationの配役](../adaptive-orchestration/references/model-routing.md) に従う。司令塔・独立レビューは最新の利用可能なSol High、仕様が確定した定型作業はLuna、原因分析・設計比較は必要に応じてAstra・Opusへ分担する。今回のユーザー指定を優先する。
+
 最大agent数、時間/tool予算、担当path/除外path、read-onlyまたはedit、成果物、commit owner、validation ownerを決める。実際に起動するときだけ [runtime adapter](references/runtime-adapter.md) を読む。
 
 ```text
 repository: <absolute path>
+role / model / effort: <役割、確認済みの最新model ID、推論設定>
 owned_paths / excluded_paths: <担当と除外>
 task / acceptance_criteria: <依頼と確認可能な完了条件>
 permissions: <read-onlyまたは編集範囲、禁止操作>

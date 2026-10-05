@@ -1,0 +1,4 @@
+interface:
+  display_name: "結果だけ通知"
+  short_description: "明示依頼やリーダー指名を受けた作業の結果だけ、一度通知する"
+  default_prompt: "$notify-result で、この作業の確認済みの結果を一度だけ通知して。"

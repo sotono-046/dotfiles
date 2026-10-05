@@ -9,7 +9,7 @@
 | idle/完了turnの再開 | followup_task | 公開されたresume/messaging tool |
 | 状態・待機 | list_agents / wait_agent | notificationまたは公開された待機tool |
 
-- Codexでは一意なtask_nameと自己完結したmessageを渡す。fork_turnsは必要最小限、model/reasoningは既定・明示指定を尊重する。run_in_background、TaskOutput、Claude固有model/subagent_typeを渡さない。
+- Codexでは一意なtask_nameと自己完結したmessageを渡す。model/reasoningは [配役](../../adaptive-orchestration/references/model-routing.md) と今回の明示指定に従う。model override時のfork_turns制約は現在のschemaで確認し、独立レビューには別コンテキストを使う。run_in_background、TaskOutput、Claude固有model/subagent_typeを渡さない。
 - Claudeのsubagent_type、background option、modelは公開schemaで確認する。tool一覧や権限を推測しない。
 - timeoutは未完了を示す場合がある。状態・最新出力を確認し、同じ処理を盲目的に再送しない。
 - 利用可能な待機toolを使い、ユーザーへの応答を妨げる長いforeground待機を避ける。
