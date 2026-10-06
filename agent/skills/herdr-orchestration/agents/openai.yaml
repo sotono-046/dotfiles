@@ -1,0 +1,4 @@
+interface:
+  display_name: "Herdr Orchestration"
+  short_description: "Herdr の tab ごとに worker を起動し、配信・完了待ち・回収を統括"
+  default_prompt: "Use $herdr-orchestration to dispatch these tasks to workers in separate Herdr tabs and integrate the results."

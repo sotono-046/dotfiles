@@ -181,6 +181,8 @@ agent の起動コマンドへ task を argv として混ぜない。interactive
 
 ## チーム編成（司令塔・参謀・レビュー・ハーネス・実行役）
 
+pane を split せず 1 task 1 tab で worker を起動し、Orca の orchestration と同じ要領で配信・完了待ち・回収を管理する場合は `herdr-orchestration` スキルを使う。
+
 複数 pane を役割分担させて実装→レビュー→検証のループを回す場合は、[references/team-orchestration.md](references/team-orchestration.md) を読んで適用する。標準レイアウト（2x2 グリッド + 役割ごとの既定モデル割当）、役割モデル、role packet / task packet のテンプレート、`[司令塔→参謀]` prefix のメッセージプロトコル、ハードリミット、司令塔の引き継ぎパケットを定義している。ユーザーが別指定しない限り、チーム編成の依頼にはこの標準レイアウトをそのまま適用する。
 
 標準 2x2 で規模・難度が足りない場合（milestone 5+ の複数 workstream、基盤変更級の設計難度、並列リサーチ、出荷前の独立監査など）は、[references/pipelines.md](references/pipelines.md) の Helix プリセット（P-A〜P-F、M-# mission mapping）から選ぶ。「Helix」「P-Aで」「パイプラインで」という明示語彙だけでなく、上記のような規模・難度の記述からも該当プリセットを判断してよい。
