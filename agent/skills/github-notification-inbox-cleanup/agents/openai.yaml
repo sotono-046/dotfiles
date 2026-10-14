@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub通知の受信トレイ整理"
+  short_description: "個人用・仕事用GmailのGitHub通知を一括アーカイブし、残件を確認する"
+  default_prompt: "$github-notification-inbox-cleanup を使って、個人用・仕事用Gmailの受信トレイにあるGitHub通知をまとめてアーカイブして。"

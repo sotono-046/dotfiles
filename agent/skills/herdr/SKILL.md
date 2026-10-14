@@ -1,222 +1,75 @@
 ---
 name: herdr
-description: Herdr の workspace / tab / pane / agent を CLI から確認・操作し、別ペインの Claude Code・Codex などへ指示を送って協調させる。ユーザーが Herdr を明示したとき、Herdr の別エージェントへ送る、ペインへタスクを投げる、agent 状態を待つ、pane 出力を読む、pane を split して agent を起動する、司令塔・参謀・レビュー・ハーネス・実行役といったチーム編成で複数 agent を統括する、といった依頼で使用する。プロンプト送信は `herdr agent prompt --wait` で送信と完了待ちを一度に行う。「チームで回して」「パイプラインで」「P-Aで」など規模・難度に応じたプリセット編成を求められたときは references/pipelines.md の Helix プリセット（P-A〜P-F）も適用する。
+description: Herdrのworkspace・tab・pane・agentをCLIで操作する。別エージェントへの指示、タブでの分担、人事とPMによる担当編成、Workboardでのタスク可視化、進捗更新、成果回収、担当交代に使う。「Herdrでオーケストレーション」「人事とPMを置く」「タブでworkerを回す」「P-Aで」などの依頼を扱う。
 ---
 
 # Herdr
 
-Herdr の実行中 session を CLI から操作し、別 pane の agent と協調する。
+Herdrの操作とチーム運用をこのスキルで扱う。人間は人事にもPMにも直接相談できる。人事が担当を用意し、PMが実行役を束ねて仕事を進める。タスクは原則herdr-workboardで可視化する。
 
-## 前提を確認する
+## 短い起動指示
 
-制御コマンドを実行する前に、現在の agent が Herdr 管理 pane 内にいることを確認する。
+Piでは `/herdr [仕事の内容]`、Codexでは `$herdr start [仕事の内容]` で [共通の起動手順](references/start.md) を実行する。`/skill:herdr start` や「herdrスキルのstartを実行して」も同じ。仕事の指定がなければ体制とWorkboardを準備する。
 
-```zsh
-test "${HERDR_ENV:-}" = 1
-```
+## 依頼に応じて読む
 
-失敗したら、Herdr 内で動いていないことをユーザーへ伝えて停止する。外部から、ユーザーが操作中の Herdr session を推測で制御しない。
+- 既存paneの確認・送信・出力読み取りだけなら [CLI操作](references/cli.md) を使う。チームを新設しない。
+- チームの編成・実行なら [役割とpacket](references/roles.md) と [起動・台帳・回収](references/operations.md)、[Workboard連携](references/workboard.md) を使う。
+- `Helix`、`P-A`〜`P-F`、`M-#` が指定されたら、上記に加えて [編成プリセット](references/pipelines.md) を読む。
+- 設計やスキル整理だけの依頼では、実agentを起動しない。
 
-インストール済み CLI を構文の正とする。CLI は更新で subcommand が増減する（旧 `herdr wait` と `herdr agent send` は廃止済み）。bare `herdr` は TUI を起動するため、調査には使わない。
+## 基本の役割分担
 
-下の早見表（`herdr 0.8.0` 基準）でほとんどの操作は足りる。`--help` の実行は、早見表のコマンドがエラーになる・見当たらないなど CLI バージョン差異を検知したときだけにする。
+| 役割 | 人間との相談 | 担当すること |
+| --- | --- | --- |
+| 人事 | 必要な専門性、担当の構成・交代 | 担当の設計・作成・配置。使える担当と能力を記録する |
+| PM | 目標・方針の壁打ち、進捗・成果の確認 | 仕事の分解、実行役への指示、依存関係の管理、成果の採否 |
+| 実行役 | 通常の作業報告はPMへ返す | 割り当てられた調査・実装・検証などを行う |
 
-```zsh
-herdr --version
-herdr --help
-herdr agent --help
-herdr pane --help
-herdr tab --help
-```
-
-bare subcommand（`herdr agent` 等）も usage を表示するが非ゼロで終了するため、調査には `--help` を使う。
-
-### コマンド早見表
-
-| 操作 | コマンド |
-| --- | --- |
-| agent 一覧 | `herdr agent list` |
-| agent 状態確認 | `herdr agent get <target>` |
-| agent が idle になるまで待つ | `herdr agent wait <target> --until idle --timeout <ms>` |
-| agent へ送信して完了待ち | `herdr agent prompt <target> "<text>" --wait --timeout <ms>` |
-| agent 出力を読む | `herdr agent read <target> --source recent-unwrapped --lines <n>` |
-| pane 出力を読む | `herdr pane read <pane_id> --source recent-unwrapped --lines <n>` |
-| pane で shell command 実行 | `herdr pane run <pane_id> "<command>"` |
-| pane に Enter だけ追送 | `herdr pane send-keys <pane_id> enter` |
-| pane を split して新 pane を作る | `herdr pane split --current --direction right\|down --no-focus` |
-| pane を rename | `herdr pane rename <pane_id> "<label>"` |
-| pane で agent を起動 | `herdr agent start <name> --kind <claude\|codex> --pane <pane_id> -- <agent args>` |
-| agent 検出根拠を調べる | `herdr agent explain <pane_id>` |
-| worktree 一覧 / 作成 / open | `herdr worktree list` / `herdr worktree create ...` / `herdr worktree open ...` |
-| herdr 外の出力パターンを待つ | `herdr pane wait-output <pane_id> --regex <pattern> --timeout <ms>` |
-
-`workspace_id`、`tab_id`、`pane_id`、`terminal_id` は opaque な値として扱う。番号や表示順から組み立てず、JSON 応答から取得する。
-
-## 鉄則: agent へは `agent prompt`、shell へは `pane run`
-
-別 pane の **agent** へプロンプトを送るときは `agent prompt` を使う。本文の送信と Enter が atomic で、`--wait` を付ければ完了待ちまで一度に行える。
-
-```zsh
-herdr agent prompt "$target" "$message" --wait --timeout 1800000
-```
-
-- `--wait` は送信後に settled 状態（既定: idle / done / blocked）を待つ。`--until <status>` で待つ状態を指定できる。
-- 送信先 agent が non-working 状態のときに送信すると、5 秒以内に状態変化が観測されない場合 `agent_prompt_stalled` が返る。返ったら `pane read` で画面を確認する。
-- `--wait` は turn を追跡しない。agent が既に working のときは進行中 turn の完了にマッチしうるため、先に `agent wait` で idle を確認してから送る。
-
-agent ではない **shell pane** でコマンドを実行するときは `pane run` を使う。
-
-```zsh
-herdr pane run "$pane_id" "$command"
-```
-
-- 入力済み文字列へ Enter だけ追送するときは `herdr pane send-keys "$pane_id" enter`。
-- Enter を押さず入力欄へ置くだけ、とユーザーが明示した場合だけ `pane send-text` を使う。
-- shell metacharacter を含む本文は shell で再解釈させず、引数として quote して渡す。
-
-## 標準ワークフロー
-
-### 1. 送り先を特定する
-
-agent 一覧を取得し、対象の `pane_id` と状態を確認する。
-
-```zsh
-herdr agent list
-herdr agent get <target>
-```
-
-`target` には unique agent name と、agent をホストしている pane ID を使用できる。複数候補がある場合は送信せず、対象を確認する。
-
-`agent target ... not found` は、pane の split / rename / close をまたいで古い pane ID や agent 名を使い回したときに起きる代表的な失敗。`agent prompt` / `agent wait` を送る直前には必ず `herdr agent list` で現在の一覧を取り直し、ID や名前を確認済みの値に更新する。前の turn で取得した ID をキャッシュしたまま次の turn で使わない。
-
-現在の pane や同一 workspace の pane を確認するときは、focus に依存せず明示的な ID を使う。
-
-```zsh
-printf '%s\n' "$HERDR_WORKSPACE_ID" "$HERDR_TAB_ID" "$HERDR_PANE_ID"
-herdr pane current --current
-herdr pane list --workspace "$HERDR_WORKSPACE_ID"
-```
-
-### 2. agent が入力待ちになるまで待つ
-
-`agent_status` が `working` の間は新しい指示を重ねない。`idle` を待ってから送る。
-
-```zsh
-herdr agent get "$target"
-herdr agent wait "$target" --until idle --timeout 30000
-```
-
-`agent wait` は `--until` なしだと idle / done / blocked のいずれかで返る。`blocked` の場合は `pane read` で画面を確認し、権限確認や質問への回答が必要か判断する。timeout したら再送せず、状態と出力を読む。
-
-### 待機の作法（timeout は異常ではない）
-
-`agent wait` / `agent prompt --wait` の timeout（exit 1）は「まだ working」を示す正常な信号であり、失敗ではない。実測でも大半の agent 起因エラーは timeout の取り扱いミスに集中している。
-
-- 長時間タスクには `--timeout 300000`（5分）以上を指定する。実装・調査系の task packet では `1800000`（30分）を既定にする。
-- timeout（`--timeout` 超過）と `agent_prompt_stalled`（非 working 状態から送信して 5 秒以内に状態変化が観測されない）は別のエラーだが、対処は同じ。どちらも即座に再送しない。`herdr agent get "$target"` で現在状態を確認し、必要なら `pane read` で出力を読んでから次の待機を判断する。
-- `herdr agent wait "$target" ... >/dev/null 2>&1; herdr agent prompt "$target" "$message"` のように wait のエラーを握りつぶして盲目的に送信しない。wait が失敗した状態を無視して送ると、working 中の agent へ指示を重ねる事故につながる。
-- foreground の `sleep N` で待ってから `pane read` するパターンは harness にブロックされるため使わない。herdr 外の状態（CI・ビルド・成果物ファイルなど）を待つ場合は `herdr pane wait-output` か、background の polling script（Monitor / `run_in_background`、状態変化時のみ 1 行出力し番兵文字列で exit する）を使う。
-
-### 3. task packet を送信して完了まで待つ
-
-暗黙の会話文脈に依存せず、repo、goal、scope、制約、成果物を含む自己完結した指示を作る。
-
-```zsh
-message='Repo: /absolute/path
-Goal: 対象テストを実行して原因を調べる
-Scope: 読み取りとテスト実行のみ。ファイルは編集しない
-Deliverable: 実行コマンド、結果、原因候補を報告する'
-
-herdr agent prompt "$target" "$message" --wait --timeout 1800000
-```
-
-初回の実装 agent には、task packet の前に同じ方法で role packet を送る。
+実行役への作業指示はPMに一本化する。人事はroleの設定までを担当し、taskを配信しない。PMは足りない能力と理由を人事へ伝え、人事が用意した担当を使う。人間の直接指示は優先し、関係する方針・担当範囲をPMと共有して二重指示を防ぐ。
 
 ```text
-Role: implementation agent
-- 指示された scope だけを扱う
-- commit / push / destructive git command は明示指示なしで行わない
-- 不明点や blocker は作業を広げず報告する
-- changed files / commands run / result を返す
+相談タブ       [ 人事 | PM ]
+Workboard     [ todo | doing | review | done ]
+状態別タブ     各カードに結びついた実行役のpaneを配置
+人間           ↔ 人事 / PM
+PM             → 仕事の指示 → 実行役 → 成果・進捗 → PM
+PM             → 担当の補充・交代依頼 → 人事
 ```
 
-follow-up も必ず `agent prompt` で送る。
+既存のPM paneを利用できれば再利用する。人事は編成・交代・相談時に動き、待機中の定期推論は不要。Workboardでは1カードに1作業paneを結び、状態別タブへ配置する。人事・PMは相談タブに置く。Workboardを使わない明示指定時だけ1担当1タブなどの配置を使う。
 
-### 4. 結果を読む
+複数の仕事を扱う場合は共通の人事と仕事別PMを置く。仕事間の優先順位や編集範囲の調整が必要な場合だけ全体調整役を追加する。単一の仕事に全体調整役と仕事別PMを重ねない。
 
-agent 名や pane ID が既に分かっている場合は `herdr agent read "$target"` で直接読める（`pane read` と同じ `--source` / `--lines` を取る）。pane ID を経由せずに読みたいときはこちらを優先する。
+## 進め方
+
+1. 目標・完了条件・repo・認可範囲を確認し、PMがWorkboardにカードを用意する。
+2. 人事が既存担当・スキルの活用を優先して必要な担当を配置する。作成後に実IDと役割の理解を確認する。
+3. PMが依存条件を満たす仕事を、担当範囲と検証条件付きで実行役へ送る。
+4. PMは人間との相談を続け、結果や質問を回収してWorkboardのカードを更新する。採用済み成果だけを次の仕事の前提にする。
+5. PMが実物と必要な検証で完了条件を確認する。担当不足や交代は人事へ戻す。
+
+Workboardを進捗の正本とし、カードに「依頼・理由・担当・状態・成果・確認待ち事項」を残す。自動同期はOFFにし、PMの採用後にだけdoneへ進める。Markdownには指示・成果・引き継ぎの詳細を保存し、進捗を二重管理しない。会話履歴やHerdrのidle表示だけで進捗・完了を判断しない。
+
+## 操作と権限
+
+- CLIの構文はインストール済みのversion・helpで確認する。IDは応答JSONから取得し、番号から作らない。
+- 実操作の前に `HERDR_ENV=1` とworkspaceを確認する。管理外ならpacket・dry-run準備まで進め、実起動は未実施と伝える。
+- agentへの指示は `agent prompt`、shellへのコマンドは `pane run`。working中に別taskを重ねず、timeoutやstalledでは状態と結果を読んでから判断する。
+- 担当追加は権限拡張ではない。ユーザーの認可・Git owner・対象pathを引き継ぐ。共有index操作は指定ownerに限定する。
+- 各台帳の書き手は一人にする。同じpathの編集は直列化するか独立checkoutへ分ける。独立レビュー担当は実装担当と分ける。
+- 認可済みチーム内の連絡だけを行う。外部送信・定期監視・通知を自動で追加しない。
+- 作成していないtab・pane・sessionを閉じない。途中交代は旧担当の停止と成果回収を確認する。
+
+## 補助スクリプトと検証
+
+- [create-pair.zsh](scripts/create-pair.zsh) は相談タブを左右に分割し、実IDと途中状態を保存する。`--dry-run` は管理外でも使える。agent起動・task送信は行わない。
+- [wait-workers.zsh](scripts/wait-workers.zsh) は複数担当の状態変化を監視する。`ALL_SETTLED` は成果の合格を意味しない。
 
 ```zsh
-herdr agent read "$target" --source recent-unwrapped --lines 120
-herdr pane read "$pane_id" --source recent-unwrapped --lines 120
+zsh -n <skill-dir>/scripts/create-pair.zsh
+zsh -n <skill-dir>/scripts/wait-workers.zsh
+python3 <skill-dir>/scripts/test_create_pair.py
 ```
 
-送信が CLI 側で拒否された場合（例: フラグの組み合わせが無効、対象が unknown 状態など）、プロンプトは**未送信**として扱う。エラーを無視して次の待機に進まず、`agent read` / `pane read` で実際に届いたかを確認してから、必要なら送り直す。
-
-`--wait` を使わず送信だけした場合や、外部イベント（CI・ビルド・成果物ファイル）を待つ場合は、`herdr pane wait-output "$pane_id" --regex <pattern> --timeout <ms>`（`--timeout` なしは無期限待機）や background の polling script（状態変化時のみ 1 行出力し、番兵文字列で exit する）で待つ。
-
-foreground でユーザーが見ている pane は完了時に `done` ではなく `idle` になる場合がある。`agent get` で `idle` または `done` なら完了として扱う。`blocked` なら必要な入力を確認し、`unknown` なら agent 検出と pane 出力を確認する。
-
-## helper agent を新しい pane で起動する
-
-ユーザーが Herdr で別 agent を起動するよう明示した場合だけ、現在 pane の geometry を確認し、focus を奪わず split する。
-
-```zsh
-herdr pane layout --pane "$HERDR_PANE_ID"
-herdr pane split --current --direction right --no-focus
-```
-
-横幅が狭い場合は `--direction down` を使う。応答 JSON から新しい pane_id を読み（`pane split` は `result.pane.pane_id`。フィールド名は CLI 更新で変わりうるため応答を確認する）、`agent start` で起動する。readiness 検出まで行われるため、`pane run` で起動コマンドを打つより確実。
-
-```zsh
-herdr pane rename <returned-pane-id> "reviewer"
-herdr agent start reviewer --kind codex --pane <returned-pane-id> -- -m <model> -c model_reasoning_effort=high
-herdr agent prompt <returned-pane-id> "現在の差分を $review-go-nogo の基準でレビューしてください。NO-GO は再現可能な P0/P1 の実害だけ。P2 以下は follow-up。編集しないでください。" --wait
-```
-
-agent の起動コマンドへ task を argv として混ぜない。interactive agent が `idle` になった後、task を `agent prompt` で送る。
-
-- codex の終了に `/quit` は効かない。`herdr pane send-keys "$pane_id" "ctrl+c"` を 2 回送る。
-- モデルが "at capacity" で落ちることがある。起動直後に `pane read --source visible` で確認する。
-
-## チーム編成（司令塔・参謀・レビュー・ハーネス・実行役）
-
-pane を split せず 1 task 1 tab で worker を起動し、Orca の orchestration と同じ要領で配信・完了待ち・回収を管理する場合は `herdr-orchestration` スキルを使う。
-
-複数 pane を役割分担させて実装→レビュー→検証のループを回す場合は、[references/team-orchestration.md](references/team-orchestration.md) を読んで適用する。標準レイアウト（2x2 グリッド + 役割ごとの既定モデル割当）、役割モデル、role packet / task packet のテンプレート、`[司令塔→参謀]` prefix のメッセージプロトコル、ハードリミット、司令塔の引き継ぎパケットを定義している。ユーザーが別指定しない限り、チーム編成の依頼にはこの標準レイアウトをそのまま適用する。
-
-標準 2x2 で規模・難度が足りない場合（milestone 5+ の複数 workstream、基盤変更級の設計難度、並列リサーチ、出荷前の独立監査など）は、[references/pipelines.md](references/pipelines.md) の Helix プリセット（P-A〜P-F、M-# mission mapping）から選ぶ。「Helix」「P-Aで」「パイプラインで」という明示語彙だけでなく、上記のような規模・難度の記述からも該当プリセットを判断してよい。
-
-pipelines.md は Supervisor / Commander / Specialist / Implementer / Researcher / Validator という役割名と model tier を使う。team-orchestration.md の役割とはおおよそ次のように対応するが、pipelines.md 側の粒度が細かく model tier も異なる（Commander は Sol High、参謀は Fable/Claude Code 級で別モデル）ため、両方を同時に読むときは呼称を混同しない。
-
-| team-orchestration.md | pipelines.md（近い役割） |
-| --- | --- |
-| 司令塔 | Supervisor |
-| 参謀 | Commander（実装統括の権限がより強い） |
-| レビュー | Peer reviewer / Rubric reviewer |
-| ハーネス | Validator |
-| 実行役 | Specialist / Implementer |
-| （相当なし） | Researcher（P-E 専用） |
-
-## 出力を読む
-
-- UI の見た目を確認する: `--source visible`
-- 通常の scrollback を読む: `--source recent`
-- soft wrap を結合したログや transcript を読む: `--source recent-unwrapped`
-- agent 検出の根拠を調べる: `--source detection`
-
-```zsh
-herdr pane read "$pane_id" --source recent-unwrapped --lines 120
-herdr agent explain "$pane_id"
-```
-
-## 安全ルール
-
-- `--current` または明示 ID を使い、別 client の focused pane に依存しない。
-- mutation 後は応答から新しい ID を読み直す。
-- background 操作は `--no-focus` を使う。
-- 作成していない workspace / tab / pane / session を明示指示なしで閉じない。
-- active session 内から `herdr server stop` を実行しない。
-- 同じファイルを複数 agent に同時編集させない。
-- agent の応答は司令塔側で差分と検証結果を確認してから採用する。
-- `agent wait` / `agent prompt --wait` の timeout で即座に再送しない。状態確認を挟む。
+stub検証、実Herdrでの配置・起動、仕事の完走は別々に報告する。

@@ -9,11 +9,12 @@
 # @raycast.icon 🤖
 
 # Documentation:
-# @raycast.description Mouse,Sleepwatcher
+# @raycast.description Dock,Finder,DisplayLink
 
 
 # Mac周り
-killall Dock
+# Dockのフリーズ時は通常終了では再起動できないことがある
+killall -KILL Dock
 killall Finder
 
 # DisplayLink（未インストール・未起動時はエラーを握りつぶす）

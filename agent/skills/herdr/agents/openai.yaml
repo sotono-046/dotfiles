@@ -1,4 +1,4 @@
 interface:
   display_name: "Herdr"
-  short_description: "Herdr の pane 操作とエージェント間タスク送信"
-  default_prompt: "Use $herdr to send a task to another Herdr pane and submit it with Enter."
+  short_description: "Herdrの操作と、人事・PM・実行役による編成とWorkboard可視化"
+  default_prompt: "Use $herdr start to reuse this conversation as PM, prepare HR, and track tasks on herdr-workboard."

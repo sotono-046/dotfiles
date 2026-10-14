@@ -1,0 +1,4 @@
+interface:
+  display_name: "判断フロー解説"
+  short_description: "explainerとyomiyasuで判断条件・工程ID・実測根拠を備えた解説を作る"
+  default_prompt: "$explainer-tuning で、この処理を判断条件まで図解し、コード根拠と実測があれば対応付けてください。"

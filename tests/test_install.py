@@ -142,6 +142,58 @@ class InstallTests(unittest.TestCase):
             self.run_install('--agent-only', '--dry-run', target=target, success=False)
         self.run_install('--agent-only', '--links-only', success=False)
 
+    def test_pi_prompt_links_preserve_custom_prompts_and_back_up_collisions(self):
+        prompts = self.home / '.pi/agent/prompts'
+        prompts.mkdir(parents=True)
+        personal = prompts / 'personal.md'
+        personal.write_text('personal prompt')
+        target = prompts / 'herdr.md'
+        target.write_text('previous user command')
+        before = snapshot(self.home)
+        self.run_install('--skills-only', '--dry-run')
+        self.assertEqual(before, snapshot(self.home))
+        self.run_install('--skills-only')
+        self.assertEqual(target.resolve(), REPO / 'agent/prompts/herdr.md')
+        self.assertEqual(personal.read_text(), 'personal prompt')
+        copies = [p.read_text() for p in self.backups.rglob('herdr.md.dotbackup.*')]
+        self.assertEqual(copies, ['previous user command'])
+        self.assertFalse((self.home / '.codex/prompts').exists())
+        before = snapshot(self.home)
+        self.run_install('--skills-only')
+        self.assertEqual(before, snapshot(self.home))
+
+    def test_skills_only_repairs_missing_links_without_replacing_settings(self):
+        settings = self.home / '.claude/settings.json'
+        settings.parent.mkdir()
+        settings.write_text('{"model":"user-model"}')
+        config = self.home / '.claude/CLAUDE.md'
+        config.write_text('user instructions')
+        system = self.home / '.codex/skills/.system/sentinel'
+        system.parent.mkdir(parents=True)
+        system.write_text('live system skill')
+        user = self.write_skill('.claude/skills/personal-only', 'user skill')
+        self.run_install('--skills-only')
+        skill = self.home / '.claude/skills/git-ops'
+        skill.unlink()
+        before = snapshot(self.home)
+        self.run_install('--skills-only', '--dry-run')
+        self.assertEqual(before, snapshot(self.home))
+        self.run_install('--skills-only')
+        for relative in ('.claude/skills', '.codex/skills', '.gemini/skills', '.pi/agent/skills'):
+            installed = self.home / relative / 'git-ops'
+            self.assertTrue(installed.is_symlink())
+            self.assertEqual(installed.resolve(), (SKILLS / 'git-ops').resolve())
+        self.assertEqual(settings.read_text(), '{"model":"user-model"}')
+        self.assertFalse(settings.is_symlink())
+        self.assertEqual(config.read_text(), 'user instructions')
+        self.assertEqual(system.read_text(), 'live system skill')
+        self.assertEqual(user.read_text(), 'user skill')
+        self.assertFalse((self.home / '.zshrc').exists())
+        self.assertFalse((self.home / '.codex/AGENTS.md').exists())
+        self.assertFalse(self.backups.exists())
+        for mode in ('--agent-only', '--links-only', '--skills-only'):
+            self.run_install('--skills-only', mode, success=False)
+
 
 if __name__ == '__main__':
     unittest.main()

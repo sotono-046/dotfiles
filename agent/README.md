@@ -1,14 +1,15 @@
-# エージェント設定（Claude Code / Codex / Gemini）
+# エージェント設定（Claude Code / Codex / Gemini / pi）
 
-`agent/` は Claude Code・Codex・Gemini 向けのエージェント設定を一元管理する。`install.sh` は設定ファイルと各 top-level skill を個別 symlink で配信し、エージェント本体が管理するディレクトリと共存させる。
+`agent/` は Claude Code・Codex・Gemini・pi 向けのエージェント設定を一元管理する。`install.sh` は設定ファイルと各 top-level skill を個別 symlink で配信し、エージェント本体が管理するディレクトリと共存させる。
 
 ```bash
 ./install.sh --dry-run --agent-only
 ./install.sh --agent-only
+./install.sh --skills-only
 ./install.sh --links-only
 ```
 
-別の home を使う smoke test では `DOTFILES_TARGET_HOME` を指定する。`--agent-only` は agent 設定だけ、`--links-only` は package install を行わず全 link を更新する。
+別の home を使う smoke test では `DOTFILES_TARGET_HOME` を指定する。`--agent-only` は agent 設定だけ、`--skills-only` はスキルとPiプロンプトの配信先だけ、`--links-only` は package install を行わず全 link を更新する。
 
 ## `./agents`（Claude Code の subagent 定義）
 
@@ -18,7 +19,14 @@
 
 ## workflow の起動口
 
-旧 `agent/commands/` の slash command は skill に移行済み。Codex の custom prompt 配布は非推奨のため行わない。
+旧 `agent/commands/` の slash command は skill に移行済み。Codex の custom prompt 配布は非推奨のため行わない。Piの短縮入口だけ `agent/prompts/*.md` を `~/.pi/agent/prompts/` へファイル単位で配信する。手順本体は共通スキルに置く。
+
+| 環境 | Herdrの人事・PM・Workboardを準備 | 仕事も指定 |
+| --- | --- | --- |
+| Pi | `/herdr` | `/herdr ログインの不具合を直して` |
+| Codex | `$herdr start` | `$herdr start ログインの不具合を直して` |
+
+Piは追加後に `/reload`、Codexは新しいセッションで使う。Herdr内では現在の会話をPMとして再利用し、起動済みの担当とboardを確認して不足分だけ準備する。Herdr管理外では準備まで行い、実タブを操作しない。
 
 | 旧コマンド | 移行先 |
 | --- | --- |
@@ -27,7 +35,9 @@
 
 ## `./skills`
 
-スキル本体。`install.sh` は `SKILL.md` を持つ top-level directory を `~/.claude/skills`、`~/.codex/skills`、`~/.gemini/skills` に個別配信する。各 runtime に追加したユーザー所有 skill は保持する。
+スキル本体。`install.sh` は `SKILL.md` を持つ top-level directory を `~/.claude/skills`、`~/.codex/skills`、`~/.gemini/skills`、`~/.pi/agent/skills` に個別配信する。配信元にないユーザー所有 skill は保持する。同名の配置を置換する場合は、既存の配置をbackupへ退避する。
+
+新しいスキルを追加しただけでは、各runtimeの一覧には登録されない。追加・移動・削除後は `./install.sh --skills-only --dry-run` で予定を確認してから `./install.sh --skills-only` を実行し、対象の `SKILL.md` を配信先から読めることを確認する。このモードは `~/.claude/settings.json` などのagent設定を置換しない。
 
 `skills/.system/` は Codex 用 snapshot。初回に `~/.codex/skills/.system` がなければコピーし、以後の更新は Codex 本体に任せる。既存の実ディレクトリは installer で上書きしない。
 
@@ -46,9 +56,22 @@
 | `pen-design`                | pen.dev CLI で視覚デザイン（`.pen` / 画像）を生成。`@pen.dev/cli@0.3.7` の SKILL.md |
 | `plan-digger`               | コード品質・セキュリティ・パフォーマンス検証・SOW 策定の本体      |
 | `task-orchestration`        | Codex / Claudeのruntime別subagent並列運用                          |
-| `herdr`                     | Herdr の pane / agent 操作と本文 + Enter の task packet 送信       |
+| `herdr`                     | Herdr の操作、人事・PM・実行役の編成、Workboardでのタスク可視化       |
 | `review-go-nogo`            | レビューの GO/NO-GO。重大な実害だけ blocker、P2 は follow-up         |
 | `subagent-team`             | Codex / Claudeの常駐subagent adapter                              |
+
+## piでpstackを使う
+
+共通の指示は`~/.pi/agent/AGENTS.md`、共通スキルは`~/.pi/agent/skills/`から読み込む。Codex・Claude向けと同じ配信元を使う。
+
+pstackは拡張とスキルを含むpackageとして別途導入する。`install.sh`はpackageのインストールやpi本体の設定の置換を行わない。
+
+```bash
+pi install git:github.com/michael-denyer/pstack-claude
+pi list
+```
+
+`agent/pi-pstack-models.md`は`~/.pi/agent/pstack-models.md`へ配信する。Codexと同じく起動hookをOFFにし、共通AGENTS.mdでpstackを使うよう指示する。明示的な起動には`/skill:poteto-mode`、読み込み直しには`/reload`を使う。
 
 ## `./settings.json`
 

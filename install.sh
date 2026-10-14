@@ -15,7 +15,7 @@ Usage: ./install.sh [--links-only | --agent-only | --skills-only] [--dry-run]
 
   --links-only  Skip dependency installation and install all managed links.
   --agent-only  Skip dependencies and install only agent configuration/skills.
-  --skills-only Sync skill links without changing agent settings or dotfiles.
+  --skills-only Sync skills and Pi prompt links without changing agent settings or dotfiles.
   --dry-run     Print planned dependency/link operations without changing files.
 
 Set DOTFILES_TARGET_HOME to test link installation outside the current HOME.
@@ -452,11 +452,20 @@ install_agent_links() {
   install_all_skill_links
 }
 
+install_pi_prompt_links() {
+  local prompt_src
+  for prompt_src in "$SCRIPT_DIR/agent/prompts"/*.md; do
+    [ -f "$prompt_src" ] || continue
+    link_path "$prompt_src" "$DOTFILES_HOME/.pi/agent/prompts/$(basename "$prompt_src")"
+  done
+}
+
 install_all_skill_links() {
   install_skill_links "$DOTFILES_HOME/.claude/skills" claude
   install_skill_links "$DOTFILES_HOME/.codex/skills" codex
   install_skill_links "$DOTFILES_HOME/.gemini/skills" gemini
   install_skill_links "$DOTFILES_HOME/.pi/agent/skills" pi
+  install_pi_prompt_links
 }
 
 main() {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR変更ページの視覚確認"
+  short_description: "PRの変更対象ページだけをローカルで一覧化し、リンクから見た目を確認する"
+  default_prompt: "$pr-visual-preview を使って、PRの変更対象ページだけをローカルで一覧化し、確認用リンク付きの簡易プレビューを作ってください。"
