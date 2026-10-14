@@ -460,12 +460,26 @@ install_pi_prompt_links() {
   done
 }
 
+install_pstack_skills() {
+  # poteto/pstack (standalone mirror) is installed into ~/.agents/skills and linked into ~/.claude/skills.
+  if ! command -v npx >/dev/null 2>&1; then
+    warn "npx not found, skipping pstack skills install"
+    return 0
+  fi
+  if [ "$DRY_RUN" -eq 1 ]; then
+    log "[dry-run] npx -y skills add backnotprop/pstack -g -a claude-code -y"
+    return 0
+  fi
+  HOME="$DOTFILES_HOME" npx -y skills add backnotprop/pstack -g -a claude-code -y || warn "pstack skills install failed"
+}
+
 install_all_skill_links() {
   install_skill_links "$DOTFILES_HOME/.claude/skills" claude
   install_skill_links "$DOTFILES_HOME/.codex/skills" codex
   install_skill_links "$DOTFILES_HOME/.gemini/skills" gemini
   install_skill_links "$DOTFILES_HOME/.pi/agent/skills" pi
   install_pi_prompt_links
+  install_pstack_skills
 }
 
 main() {
