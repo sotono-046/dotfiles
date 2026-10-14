@@ -11,10 +11,11 @@ SKILL_SOURCE="$SCRIPT_DIR/agent/skills"
 
 usage() {
   cat <<'EOF'
-Usage: ./install.sh [--links-only | --agent-only] [--dry-run]
+Usage: ./install.sh [--links-only | --agent-only | --skills-only] [--dry-run]
 
   --links-only  Skip dependency installation and install all managed links.
   --agent-only  Skip dependencies and install only agent configuration/skills.
+  --skills-only Sync skill links without changing agent settings or dotfiles.
   --dry-run     Print planned dependency/link operations without changing files.
 
 Set DOTFILES_TARGET_HOME to test link installation outside the current HOME.
@@ -118,7 +119,7 @@ parse_args() {
     case "$1" in
       --links-only)
         if [ -n "$selected_mode" ]; then
-          printf 'Only one of --links-only and --agent-only may be used.\n' >&2
+          printf 'Only one of --links-only, --agent-only, and --skills-only may be used.\n' >&2
           exit 2
         fi
         selected_mode="links"
@@ -126,11 +127,19 @@ parse_args() {
         ;;
       --agent-only)
         if [ -n "$selected_mode" ]; then
-          printf 'Only one of --links-only and --agent-only may be used.\n' >&2
+          printf 'Only one of --links-only, --agent-only, and --skills-only may be used.\n' >&2
           exit 2
         fi
         selected_mode="agent"
         MODE="agent"
+        ;;
+      --skills-only)
+        if [ -n "$selected_mode" ]; then
+          printf 'Only one of --links-only, --agent-only, and --skills-only may be used.\n' >&2
+          exit 2
+        fi
+        selected_mode="skills"
+        MODE="skills"
         ;;
       --dry-run)
         DRY_RUN=1
@@ -431,6 +440,7 @@ install_agent_links() {
     "agent/AGENTS.md:$DOTFILES_HOME/.codex/AGENTS.md"
     "agent/AGENTS.md:$DOTFILES_HOME/.gemini/GEMINI.md"
     "agent/AGENTS.md:$DOTFILES_HOME/.pi/agent/AGENTS.md"
+    "agent/pi-pstack-models.md:$DOTFILES_HOME/.pi/agent/pstack-models.md"
     "agent/agents:$DOTFILES_HOME/.claude/agents"
     "agent/settings.json:$DOTFILES_HOME/.claude/settings.json"
   )
@@ -439,6 +449,10 @@ install_agent_links() {
     link_path "$SCRIPT_DIR/${item%%:*}" "${item#*:}"
   done
 
+  install_all_skill_links
+}
+
+install_all_skill_links() {
   install_skill_links "$DOTFILES_HOME/.claude/skills" claude
   install_skill_links "$DOTFILES_HOME/.codex/skills" codex
   install_skill_links "$DOTFILES_HOME/.gemini/skills" gemini
@@ -457,13 +471,17 @@ main() {
     fi
   fi
 
-  if [ "$MODE" != "agent" ]; then
-    install_base_links
+  if [ "$MODE" = "skills" ]; then
+    install_all_skill_links
+  else
+    if [ "$MODE" != "agent" ]; then
+      install_base_links
+    fi
+    install_agent_links
   fi
-  install_agent_links
 
   log "Install completed"
-  if [ "$MODE" != "agent" ]; then
+  if [ "$MODE" = "full" ] || [ "$MODE" = "links" ]; then
     log "Restart your terminal or run: source $DOTFILES_HOME/.zshrc"
   fi
 }
