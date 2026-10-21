@@ -11,11 +11,12 @@ SKILL_SOURCE="$SCRIPT_DIR/agent/skills"
 
 usage() {
   cat <<'EOF'
-Usage: ./install.sh [--links-only | --agent-only | --skills-only] [--dry-run]
+Usage: ./install.sh [--links-only | --agent-only | --skills-only | --hooks-only] [--dry-run]
 
   --links-only  Skip dependency installation and install all managed links.
   --agent-only  Skip dependencies and install only agent configuration/skills.
   --skills-only Sync skills and Pi prompt links without changing agent settings or dotfiles.
+  --hooks-only  Merge mandatory-skill hooks and install the Pi extension only.
   --dry-run     Print planned dependency/link operations without changing files.
 
 Set DOTFILES_TARGET_HOME to test link installation outside the current HOME.
@@ -140,6 +141,14 @@ parse_args() {
         fi
         selected_mode="skills"
         MODE="skills"
+        ;;
+      --hooks-only)
+        if [ -n "$selected_mode" ]; then
+          printf 'Only one installation mode may be used.\n' >&2
+          exit 2
+        fi
+        selected_mode="hooks"
+        MODE="hooks"
         ;;
       --dry-run)
         DRY_RUN=1
@@ -460,31 +469,26 @@ install_pi_prompt_links() {
   done
 }
 
-install_pstack_skills() {
-  # poteto/pstack (standalone mirror) is installed into ~/.agents/skills and linked into ~/.claude/skills.
-  if ! command -v npx >/dev/null 2>&1; then
-    warn "npx not found, skipping pstack skills install"
-    return 0
-  fi
-  if [ "$DRY_RUN" -eq 1 ]; then
-    log "[dry-run] npx -y skills add backnotprop/pstack -g -a claude-code -y"
-    return 0
-  fi
-  HOME="$DOTFILES_HOME" npx -y skills add backnotprop/pstack -g -a claude-code -y || warn "pstack skills install failed"
-}
-
 install_all_skill_links() {
   install_skill_links "$DOTFILES_HOME/.claude/skills" claude
   install_skill_links "$DOTFILES_HOME/.codex/skills" codex
   install_skill_links "$DOTFILES_HOME/.gemini/skills" gemini
   install_skill_links "$DOTFILES_HOME/.pi/agent/skills" pi
   install_pi_prompt_links
-  install_pstack_skills
 }
 
 main() {
   parse_args "$@"
   log "mode=$MODE target_home=$DOTFILES_HOME dry_run=$DRY_RUN"
+
+  if [ "$MODE" = "hooks" ]; then
+    local -a hook_args=(install --home "$DOTFILES_HOME")
+    if [ "$DRY_RUN" -eq 1 ]; then
+      hook_args+=(--dry-run)
+    fi
+    python3 "$SCRIPT_DIR/agent/hooks/required-skills.py" "${hook_args[@]}"
+    return
+  fi
 
   if [ "$MODE" = "full" ]; then
     if [ "$DRY_RUN" -eq 1 ]; then

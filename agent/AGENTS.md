@@ -1,6 +1,6 @@
 # 必須スキル
 - yomiyasu
-- poteto-mode
+- pstack:poteto-mode
 
 ## コミュニケーション
 
