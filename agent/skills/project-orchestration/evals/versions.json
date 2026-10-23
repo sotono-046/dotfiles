@@ -1,0 +1,13 @@
+{
+  "cobalt": {
+    "SKILL.md": "41079d7be511c65b91ff98c6fe68bf4c879ba7285c7bc3f4e058d33b44d9aa4c",
+    "references/context-pack-template.md": "7686cfe0f725d7bad1a23d2bace33cedfa4c46791bdb6ece48fb2beab7e7dc48",
+    "references/role-prompts.md": "afc991f7c20bacb43946ccf8b11c3c6fa09326d5915abbc72cd25b339f67796a"
+  },
+  "maple": {
+    "SKILL.md": "344ef0017965f4abb3bea0456c7e25b72c31d652415bc679e1924ccaa88f8677",
+    "references/handoff.md": "14220cf0478b037f09c78c4c9b062d3b6aa9e6c8962d8abdc7a1fdb42c72c118",
+    "references/project-notes.md": "95ffe4f2a51f94efad275d544244981959536ca6b9d6f3ffbd14a75f8141f7f4",
+    "references/tasks.md": "355f8b9ce29fbef6e7f0facacfb11d171dae944e168bb486126755604051cce6"
+  }
+}

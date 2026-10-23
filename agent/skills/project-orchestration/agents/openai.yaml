@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project orchestration"
+  short_description: "プロジェクトごとの相談と記録、作業の引き継ぎを進める"
+  default_prompt: "$project-orchestration を使って、今回の依頼に必要な整理と作業を進めてください。Listenerとして動く各ターンでは、回答前に対象プロジェクトの中心MDの最新内容をファイルから読んでください。"

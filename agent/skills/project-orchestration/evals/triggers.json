@@ -1,0 +1,11 @@
+[
+  {"prompt": "MIRAIの相談内容をプロジェクトのノートに残して、続きから再開したい", "should_trigger": true},
+  {"prompt": "この計画を複数の担当に分け、結果の確認まで進めて", "should_trigger": true},
+  {"prompt": "Listenerがまとめた文脈をAssignerへ引き継ぐ資料にして", "should_trigger": true},
+  {"prompt": "このプロジェクトの方針を整理したい。今日は相談だけ", "should_trigger": true},
+  {"prompt": "Listenerとしてこのプロジェクトの相談を続けて。次は？", "should_trigger": true},
+  {"prompt": "Listenerとして相談を継続中です。プロジェクトのMDに追記したので、それも踏まえて", "should_trigger": true},
+  {"prompt": "この文章の誤字を1つ直して", "should_trigger": false},
+  {"prompt": "5足す7は？", "should_trigger": false},
+  {"prompt": "文字列を反転するPythonの書き方を教えて", "should_trigger": false}
+]
