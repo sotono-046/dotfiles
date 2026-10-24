@@ -22,7 +22,7 @@ yomiyasu_diff.py - 元の文と書き直した文を比べ、変わった箇所�
   名詞化の言い回し、強める語、気持ちの語、慎重表現の一覧は ../references/lists/ から読み、なければ内蔵の一覧を使う。
 意味が同じかどうか、つながりが合っているか、文末が立場に合っているかの最終判断は、この結果を見たモデル（または人）がする。
 """
-__version__ = "2.1.3"
+__version__ = "2.3.0"
 
 import os
 import errno
@@ -36,15 +36,18 @@ import unicodedata
 from array import array
 from bisect import bisect_left, bisect_right
 _VISIBILITY_NAMES = ("analyze_markdown", "inline_protected_spans", "unicode_whitespace", "decode_source",
-                     "normalize_doc_type", "normalize_reader", "context_label", "DOC_TYPES")
+                     "normalize_doc_type", "normalize_reader", "context_label", "DOC_TYPES",
+                     "WordsError", "resolve_words", "current_directory", "words_context", "words_label")
 try:
     try:
         if __package__:
             from .markdown_visibility import analyze_markdown, inline_protected_spans, unicode_whitespace, decode_source
             from .markdown_visibility import normalize_doc_type, normalize_reader, context_label, DOC_TYPES
+            from .markdown_visibility import WordsError, resolve_words, current_directory, words_context, words_label
         else:
             from markdown_visibility import analyze_markdown, inline_protected_spans, unicode_whitespace, decode_source
             from markdown_visibility import normalize_doc_type, normalize_reader, context_label, DOC_TYPES
+            from markdown_visibility import WordsError, resolve_words, current_directory, words_context, words_label
     except SyntaxError as error:
         # 隣の markdown_visibility.py が壊れている。ほかの読めないときと同じく ImportError にする（スクリプトでは終了コード3）。
         raise ImportError(
@@ -87,6 +90,11 @@ try:
         normalize_reader = _visibility_module.normalize_reader
         context_label = _visibility_module.context_label
         DOC_TYPES = _visibility_module.DOC_TYPES
+        WordsError = _visibility_module.WordsError
+        resolve_words = _visibility_module.resolve_words
+        current_directory = _visibility_module.current_directory
+        words_context = _visibility_module.words_context
+        words_label = _visibility_module.words_label
 except ImportError as _import_error:
     # スクリプトとして動かしたときは、main() が内部エラー（終了コード3）として出す。
     # 終了コード1は --fail-on の条件に当たったときだけに使う。
@@ -476,23 +484,31 @@ def _pair_gone_sentences(o, r, opcodes, groups, moved, gone, r_spans):
         for gram in grams:
             spans_with.setdefault(gram, []).append(idx)
     candidates = []
+    # 組にできる書き直した文と字面の近さは、消えた文の2文字の組の集合だけで決まる。同じ段落をくり返す文書では同じ文が何度も消えるので、
+    # 集合ごとに1回だけ数えて使い回す（候補は下で (近さ, gi, idx) の順に並べ直すので、作る順が変わっても結果は同じ）
+    passed_by_grams = {}
     for gi, (text, _, _) in enumerate(gone):
         grams = _bigrams(text)
-        # shared_counts[idx] は len(grams & r_grams[idx])。共通の組が1つもない文は、下の least（3以上）に届かないので数えなくてよい。
-        shared_counts = Counter()
-        for gram in grams:
-            found = spans_with.get(gram)
-            if found:
-                shared_counts.update(found)
-        for idx in sorted(shared_counts):
-            shared_count = shared_counts[idx]
-            least = 3 if min(len(grams), len(r_grams[idx])) <= 6 else 4
-            if shared_count < least or shared_count < 0.5 * min(len(grams), len(r_grams[idx])):
-                continue
-            shared = grams & r_grams[idx]
-            if len(shared - owner_grams[idx]) < least:
-                continue
-            candidates.append((dice(grams, r_grams[idx]), gi, idx))
+        key = frozenset(grams)
+        passed = passed_by_grams.get(key)
+        if passed is None:
+            passed = passed_by_grams[key] = []
+            # shared_counts[idx] は len(grams & r_grams[idx])。共通の組が1つもない文は、下の least（3以上）に届かないので数えなくてよい。
+            shared_counts = Counter()
+            for gram in grams:
+                found = spans_with.get(gram)
+                if found:
+                    shared_counts.update(found)
+            for idx in sorted(shared_counts):
+                shared_count = shared_counts[idx]
+                least = 3 if min(len(grams), len(r_grams[idx])) <= 6 else 4
+                if shared_count < least or shared_count < 0.5 * min(len(grams), len(r_grams[idx])):
+                    continue
+                shared = grams & r_grams[idx]
+                if len(shared - owner_grams[idx]) < least:
+                    continue
+                passed.append((dice(grams, r_grams[idx]), idx))
+        candidates.extend((score, gi, idx) for score, idx in passed)
     candidates.sort(key=lambda c: (-c[0], c[1], c[2]))
     used_gone, used_r, drop = set(), {}, set()
     for score, gi, idx in candidates:
@@ -1505,7 +1521,7 @@ class _ExactSequenceMatcher(difflib.SequenceMatcher):
         # 3. 長い一致を種で探す。長さ L 以上の一致がなければ答えは L より短いので、L を半分にして続ける。
         length = cap
         while length >= _MATCH_SAMPLE_MIN:
-            found = self._seeded(alo, ahi, blo, bhi, length, (la + lb) // _MATCH_SAMPLE_BUDGET_DIV)
+            found = self._seeded(alo, ahi, blo, bhi, length, cap, (la + lb) // _MATCH_SAMPLE_BUDGET_DIV)
             if found is None:                # 候補が多すぎて調べきれない。何も決めずに次の手に回す
                 break
             if found is not False:
@@ -1649,15 +1665,22 @@ class _ExactSequenceMatcher(difflib.SequenceMatcher):
                     break
         return None if best is None else difflib.Match(best[0], best[1], size)
 
-    def _seeded(self, alo, ahi, blo, bhi, length, budget):
+    def _seeded(self, alo, ahi, blo, bhi, length, cap, budget):
         """長さ length 以上の共通の部分のうち、いちばん長く、a で最も前、同じ a なら b で最も前のもの。
         なければ False（答えは length-1 以下と分かる）。調べる候補が budget を超えたら None（何も決めない）。
+        cap は答えの長さの上限（証明済み。length 以上）。
 
         種の長さを q、格子の間隔を s = length-q+1 とし、a の格子の位置 t を alo+s-1 から s おきにとる。長さ length 以上の
         共通の部分が a[x:x+length] を含むとき、区間 [x, x+length-q]（s 個の連続した位置。x >= alo なので alo+s-1 以上の格子の位置が入る）
         には格子の位置 t が必ず1つあり、その共通の部分は種 a[t:t+q] を含む。そこで、格子の位置の種が b[blo:bhi] に現れる所をすべて引き、
         そこから範囲の中で前後に伸ばせるだけ伸ばした一致を集め、いちばん長く、a で最も前、b で最も前のものを選ぶ。
-        答え（いちばん長い共通の部分）は、それ以上伸ばせないので、伸ばした一致のどれかとして必ず集まる。"""
+        答え（いちばん長い共通の部分）は、それ以上伸ばせないので、伸ばした一致のどれかとして必ず集まる。
+
+        length が cap と同じときは、格子の位置を前から見て、一致が見つかった最初の位置で止める。長さ length 以上の一致は
+        どれも長さ cap ちょうどなので、区間 [x, x+length-q] に入る格子の位置はちょうど1つで、x が前の一致ほどその位置も前か同じになる。
+        最初に一致が見つかった格子の位置を T とすると、それより後ろの格子の位置の一致は x が T より後ろで、T の一致（x は T 以下）に勝てない。
+        答えの x の一致は、x が同じものも含めてすべて T の種から伸びる。同じ段落が何十回も続く文書では、右の範囲の答えがすぐ次の段落にあり、
+        残りの段落の種を引かずに済む。"""
         a, b = self.a, self.b
         q = _MATCH_SEED_LONG if length >= 2 * _MATCH_SEED_LONG else _MATCH_SEED_SHORT
         indexes = self.__dict__.setdefault("_seed_indexes", {})
@@ -1668,6 +1691,7 @@ class _ExactSequenceMatcher(difflib.SequenceMatcher):
         count = len(keys)
         step = length - q + 1
         last = bhi - q
+        early = length >= cap
         seeds = []
         total = 0
         for t in range(alo + step - 1, ahi - q + 1, step):
@@ -1683,17 +1707,31 @@ class _ExactSequenceMatcher(difflib.SequenceMatcher):
                     if total > budget:
                         return None
                 p += 1
+            if early and seeds:
+                best = self._extend_seeds(seeds, alo, ahi, blo, bhi, q, length, cap)
+                if best is not None:
+                    break
+                seeds = []
+        else:
+            best = self._extend_seeds(seeds, alo, ahi, blo, bhi, q, length, cap)
+        if best is None:
+            return False
+        return difflib.Match(best[1], best[2], -best[0])
+
+    def _extend_seeds(self, seeds, alo, ahi, blo, bhi, q, length, cap):
+        """種 (t, u) を範囲の中で前後に伸ばせるだけ伸ばした一致のうち、長さ length 以上で、いちばん長く、a で最も前、b で最も前のもの
+        を (-長さ, a の位置, b の位置) で返す（なければ None）。どの一致も長さは cap 以下なので、伸ばす長さも cap までで止める
+        （止めなければ、範囲の端までの長い部分を切り出して比べることになる）。"""
+        a, b = self.a, self.b
         best = None
         for t, u in seeds:
-            back = _common_suffix_len(a, t, b, u, min(t - alo, u - blo))
-            size = back + q + _common_prefix_len(a, t + q, b, u + q, min(ahi - t, bhi - u) - q)
+            back = _common_suffix_len(a, t, b, u, min(t - alo, u - blo, cap - q))
+            size = back + q + _common_prefix_len(a, t + q, b, u + q, min(ahi - t, bhi - u, cap - back) - q)
             if size >= length:
                 candidate = (-size, t - back, u - back)
                 if best is None or candidate < best:
                     best = candidate
-        if best is None:
-            return False
-        return difflib.Match(best[1], best[2], -best[0])
+        return best
 
     def _collision(self):
         """a の1字と b の1字が同じである割合（DP の手間の見積もりにだけ使う）。"""
@@ -5193,6 +5231,16 @@ def _is_question(text):
     return bool(_QUESTION.search(text)) and not _NOT_QUESTION_KA.search(text)
 
 
+# 台詞の最後の「。」（閉じ括弧の前）。2.2.0 の台詞・脚本の推敲は、この「。」だけを外す
+_FINAL_PERIOD_IN_QUOTE = re.compile(r"。(?=[」』]+$)")
+
+
+def _only_final_period_removed(old, new):
+    """片方の文から台詞の最後の「。」を外すと、もう片方と同じになるか（「見たのか。」→「見たのか」）。"""
+    old, new = old.rstrip(), new.rstrip()
+    return _FINAL_PERIOD_IN_QUOTE.sub("", old) == new or _FINAL_PERIOD_IN_QUOTE.sub("", new) == old
+
+
 def _question_risks(sides, groups):
     """問い（kind sentence_type、subkind question）。組になった文の片方だけが問いの文（文末が ？、?、か。、か？）なら出す。
     句点のない「…か」で終わる文は問いに数えない。"""
@@ -5202,7 +5250,8 @@ def _question_risks(sides, groups):
         for i, j in group["pairs"]:
             old, new = group["old"][i], group["new"][j]
             old_question, new_question = _is_question(old.text), _is_question(new.text)
-            if old_question != new_question:
+            # 台詞の最後の「。」だけを外した組は、問いのまま読めるので出さない
+            if old_question != new_question and not _only_final_period_removed(old.text, new.text):
                 out.append((_group_index(group, new), order, _risk(
                     "sentence_type", "question", old.line, new.line, old.text, new.text,
                     {"old_is_question": old_question, "new_is_question": new_question})))
@@ -9594,7 +9643,7 @@ def _new_review_section(d, key):
     return "\n".join(lines)
 
 
-def diff(orig_raw: str, rw_raw: str, stance=None, *, encoding_notes=None, doc_type=None, reader=None) -> dict:
+def diff(orig_raw: str, rw_raw: str, stance=None, *, encoding_notes=None, doc_type=None, reader=None, words=None) -> dict:
     """元の文と書き直した文を比べる（JSON の形式2）。
 
     渡された文字列をそのまま使う（BOM を外したり、改行をそろえたりしない。CLI と check は読むときに decode_source で
@@ -9603,8 +9652,12 @@ def diff(orig_raw: str, rw_raw: str, stance=None, *, encoding_notes=None, doc_ty
     （種類と読者を指定しても同じ規則）。事実や仕様を述べる種類（COUNTED_TYPES）だけ、確度の2つ（「場合がある」「ことがある」を
     消した言い切り、断定に「必ず」などを足した書き換え）を --fail-on に数える側に入れる。能力の言い方の消え（ability_lost）は、
     どの種類でも数えない候補（modality_review）。文体の硬化の検査（stiffness）と勢いの検査（tone）は、種類で level を決める
-    （paper の硬化と勢いも参考の info。mail の勢いは絵文字・見出しも review）。mail だけ敬語の度合いも検査する。値は中で正規化し、使えない値は ValueError。"""
+    （paper の硬化と勢いも参考の info。mail の勢いは絵文字・見出しも review）。mail だけ敬語の度合いも検査する。値は中で正規化し、使えない値は ValueError。
+    words は語の一覧（markdown_visibility.resolve_words の値）。渡すと context.words（場所、語の数、SHA-256）に残すだけで、
+    差分と候補は変えない（diff には allow.txt で外す規則がない）。None なら一覧なし。"""
     context = {"doc_type": normalize_doc_type(doc_type), "reader": normalize_reader(reader)}
+    if words is not None:
+        context["words"] = words_context(words)
     try:
         rules = _rule_candidates(orig_raw, rw_raw, stance)
         # 許可・能力の言い方と、選ぶ範囲・因果の言い方は、9キーの分析（_rule_candidates の type_changes）が作った範囲を
@@ -10302,6 +10355,9 @@ def report(d: dict) -> str:
     if context.get("doc_type") is not None or context.get("reader") is not None:
         head.append(context_label(context.get("doc_type"), context.get("reader")) + _REPORT_CONTEXT_TAIL
                     + (_REPORT_COUNTED_TAIL if context.get("doc_type") in COUNTED_TYPES else ""))
+    if isinstance(context.get("words"), dict):
+        # 語の一覧を使ったときだけ（種類と読者の行のあと）
+        head.append(words_label(context["words"]))
     return "\n".join(head) + "\n\n" + "\n\n".join(body) + "\n\n" + _status_line(d, _DETECTOR_STATUS_NOTE_ABOVE)
 
 
@@ -10315,9 +10371,10 @@ def read_text(path):
 _EXIT_CODES = """終了コード:
   0  比べ終わり、--fail-on の条件に当たらなかった（候補の有無によらない）。--endings の正常終了、-h と --version も0
   1  --fail-on=meaning-risk の条件に当たった（数値、否定、主語と目的語の入れ替え、文の種類・引用の印・確度・状態の語・約束・許可の言い方・選ぶ範囲・因果の恐れが1件以上）
-  2  使い方か入力の誤り（ファイルを開けない、UTF-8 として読めない、標準入力を読めない、使えない --stance、--fail-on、--doc-type、--reader の値、ファイルの数の誤り）
+  2  使い方か入力の誤り（ファイルを開けない、UTF-8 として読めない、標準入力を読めない、使えない --stance、--fail-on、--doc-type、--reader の値、ファイルの数の誤り、語の一覧を読めない（--words のフォルダがない、UTF-8 でない、1万行を超える）、--words と --no-words を一緒に指定した）
   3  予期しない内部の誤り（標準エラーにトレースバックを出す）か、出力先が閉じられて結果を最後まで書けなかった"""
-_USAGE = ("yomiyasu_diff.py [--stance 立場] [--doc-type 種類] [--reader 読者] [--json] [--fail-on meaning-risk] 元の文 書き直した文\n"
+_USAGE = ("yomiyasu_diff.py [--stance 立場] [--doc-type 種類] [--reader 読者] [--json] [--fail-on meaning-risk]\n"
+          "                        [--words フォルダ | --no-words] 元の文 書き直した文\n"
           "       yomiyasu_diff.py --endings ファイル [--stance 立場]\n"
           "       yomiyasu_diff.py --version")
 _FAIL_ON_HELP = ("意味が変わる恐れのうち、数値、否定、主語と目的語の入れ替え、文の種類（問いと平叙、文の種類の印）、引用の印の変化、"
@@ -10430,8 +10487,14 @@ def _build_parser():
                               + "、".join("{}（{}）".format(row[0], row[1]) for row in DOC_TYPES) + "。")
     options.add_argument("--reader", metavar="読者",
                          help="想定する読者の知識（値は yomiyasu_lint.py と同じ）。表示と JSON に残すだけで、判定は変わりません。")
+    options.add_argument("--words", metavar="フォルダ",
+                         help="語の一覧（allow.txt と flag.txt）のフォルダ（値は yomiyasu_lint.py と同じ）。省くと、作業ディレクトリから"
+                              "上へたどった git の最上位（.git のあるフォルダ。git の外では作業ディレクトリ）の .yomiyasu-words/ を"
+                              "探します。diff では一覧の場所と語の数を表示と JSON に書きます（差分と候補は変わりません）。")
+    options.add_argument("--no-words", action="store_true",
+                         help="語の一覧を探さず、読みません（--words と一緒には使えません）。")
     options.add_argument("--endings", action="store_true",
-                         help="1つのファイルの文末の種類と、立場の混ざりだけを見ます（--json と --fail-on は使えません）。")
+                         help="1つのファイルの文末の種類と、立場の混ざりだけを見ます（--json、--fail-on、--words、--no-words は使えません）。")
     options.add_argument("--version", action="store_true", help="版を表示して終わります。")
     parser.set_defaults(fail_on=[])
     return parser
@@ -10552,10 +10615,15 @@ def _run(argv):
         if args.doc_type is not None or args.reader is not None:
             # 無視せずに使い方の誤りにする（--json、--fail-on と同じ）
             parser.error("--endings は --doc-type と --reader に対応していません")
+        if args.words is not None or args.no_words:
+            # 文末だけを見るときは語の一覧を探さない。指定は無視せずに使い方の誤りにする（--doc-type と同じ）
+            parser.error("--endings は --words と --no-words に対応していません")
         if len(files) != 1:
             parser.error("--endings のときは、ファイルを1つだけ渡してください（渡されたのは{}つ）".format(len(files)))
     elif len(files) != 2:
         parser.error("元の文と書き直した文の2つのファイルを渡してください（渡されたのは{}つ）".format(len(files)))
+    if args.words is not None and args.no_words:
+        parser.error("--words と --no-words は一緒に使えません")
     if files.count("-") > 1:
         parser.error("標準入力（-）は1か所だけに使えます")
     fail_on, problem = _fail_on(args.fail_on)
@@ -10576,6 +10644,14 @@ def _run(argv):
     except ValueError as error:
         _error(str(error))
         return 2
+    words = None
+    if not args.endings:
+        try:
+            # 語の一覧。読めない一覧は、入力を読む前に2で断る（--endings では探さない）
+            words = resolve_words(current_directory(), args.words, args.no_words)
+        except WordsError as error:
+            _error(str(error))
+            return 2
     texts, infos = [], []
     for path in files:
         text, info, problem = _read_input(path)
@@ -10590,7 +10666,7 @@ def _run(argv):
         code = 0
     else:
         result = diff(texts[0], texts[1], stance, encoding_notes=_encoding_notes(infos[0], infos[1]),
-                      doc_type=doc_type, reader=reader)
+                      doc_type=doc_type, reader=reader, words=words)
         counted = result["fail_on_meaning_risk_count"]
         hit = fail_on and counted > 0
         if args.json:
