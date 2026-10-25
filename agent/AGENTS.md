@@ -16,7 +16,7 @@
 - API・CLIフラグ・設定schemaなど、versionに依存する判断は実環境と一次情報で確認する。取得済みの情報は再利用する。
 - Gitの履歴・remote変更には `git-ops`
 - UIの作成・修正・見た目のレビューでは、必ず `ui-screenshot` を使う。
-
+- スキル作成・改訂時は `agent/skills/empirical-prompt-tuning/` を参照する。
 
 ## ショートカット
 
