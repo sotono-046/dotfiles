@@ -27,7 +27,7 @@ if [[ -n "${GHOSTTY_RESOURCES_DIR:-}" ]]; then
   fi
 fi
 
-# SSH 先で xterm-ghostty terminfo が無いと vim/tmux 等が壊れる
+# SSH 先で xterm-ghostty terminfo が無いと vim 等が壊れる
 if [[ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" && "${TERM:-}" == xterm-ghostty ]]; then
   export TERM=xterm-256color
 fi
@@ -62,8 +62,8 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # Added by Antigravity
 export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 
-# 作業ディレクトリ / リポジトリ / tmux IDE コマンドは zsh/ 配下に分割
-for _zshrc_part in "$HOME/dotfiles/zsh/repo.zsh" "$HOME/dotfiles/zsh/new.zsh" "$HOME/dotfiles/zsh/tmux.zsh" "$HOME/dotfiles/zsh/agent.zsh"; do
+# 作業ディレクトリ / リポジトリ / エージェント起動は zsh/ 配下に分割
+for _zshrc_part in "$HOME/dotfiles/zsh/repo.zsh" "$HOME/dotfiles/zsh/new.zsh" "$HOME/dotfiles/zsh/agent.zsh"; do
     [[ -f "$_zshrc_part" ]] && source "$_zshrc_part"
 done
 unset _zshrc_part

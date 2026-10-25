@@ -2,7 +2,7 @@
 
 ## プロジェクト構成
 
-このリポジトリは個人用 dotfiles とエージェント設定を管理します。ルート直下の `.zshrc`、`.tmux.conf`、`starship.toml`、`zellij.conf`、`zellij.kdl`、`ccstatusline.json`、`Brewfile`、`install.sh` はユーザー環境に直接反映される設定です。`raycast/` には Raycast 用の補助スクリプトがあります。`agent/` は Codex / Claude 向け設定で、`agent/skills/` は再利用可能な workflow、`agent/agents/` は subagent 定義、`agent/settings.json` はツール権限と hook を管理します。`agent/` 配下を変更するときは `agent/AGENTS.md` にも従ってください。
+このリポジトリは個人用 dotfiles とエージェント設定を管理します。ルート直下の `.zshrc`、`starship.toml`、`ccstatusline.json`、`Brewfile`、`install.sh`、`herdr/config.toml` はユーザー環境に直接反映される設定です。`raycast/` には Raycast 用の補助スクリプトがあります。`agent/` は Codex / Claude 向け設定で、`agent/skills/` は再利用可能な workflow、`agent/agents/` は subagent 定義、`agent/settings.json` はツール権限と hook を管理します。`agent/` 配下を変更するときは `agent/AGENTS.md` にも従ってください。
 
 ## 開発・検証コマンド
 

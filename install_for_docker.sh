@@ -456,29 +456,12 @@ maybe_set_default_shell() {
   fi
 }
 
-install_tpm() {
-  if ! need_cmd git; then
-    warn "git not found; skipping tmux plugin manager"
-    return
-  fi
-
-  local tpm_dir="$HOME_DIR/.tmux/plugins/tpm"
-  if [ -d "$tpm_dir" ]; then
-    log "tpm already installed: $tpm_dir"
-    return
-  fi
-
-  log "Installing tmux plugin manager"
-  git clone https://github.com/tmux-plugins/tpm "$tpm_dir" || warn "tpm clone failed"
-}
-
 link_dotfiles() {
   remove_managed_link "$HOME_DIR/.claude/commands" "$SCRIPT_DIR/agent/commands"
   remove_managed_link "$HOME_DIR/.codex/prompts" "$SCRIPT_DIR/agent/commands"
 
   link_file "$SCRIPT_DIR/.zshrc" "$HOME_DIR/.zshrc"
   link_file "$SCRIPT_DIR/starship.toml" "$HOME_DIR/.config/starship.toml"
-  link_file "$SCRIPT_DIR/.tmux.conf" "$HOME_DIR/.tmux.conf"
   link_file "$SCRIPT_DIR/ccstatusline.json" "$HOME_DIR/.config/ccstatusline/settings.json"
   link_file "$SCRIPT_DIR/agent/CLAUDE.md" "$HOME_DIR/.claude/CLAUDE.md"
   link_file "$SCRIPT_DIR/agent/AGENTS.md" "$HOME_DIR/.codex/AGENTS.md"
@@ -514,7 +497,6 @@ main() {
       install_starship
     fi
     write_docker_shell_bootstrap
-    install_tpm
     maybe_set_default_shell
   fi
 

@@ -5,7 +5,7 @@
 - macOS
 - zsh
 - starship
-- tmux
+- Herdr
 - Claudecode
 - Codex CLI
 - Gemini CLI

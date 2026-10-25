@@ -525,17 +525,23 @@ _wt_create() {
         base_commit="$base_branch"
     fi
 
-    echo "Creating worktree: ${new_branch} (from ${base_branch})"
-    if ! wtp add -b "${new_branch}" "${base_commit}"; then
-        echo "wtp add に失敗しました"
+    local repo_root worktree_root worktree_path
+    repo_root=$(git rev-parse --show-toplevel) || return 1
+    worktree_root="$(cd "${repo_root}/.." && pwd)/worktrees"
+    worktree_path="${worktree_root}/${new_branch}"
+
+    if [[ -e "$worktree_path" ]]; then
+        echo "worktree パスが既に存在します: ${worktree_path}"
         return 1
     fi
 
-    local worktree_path
-    worktree_path=$(wtp cd "${new_branch}") || {
-        echo "wtp cd でパスを取得できませんでした: ${new_branch}"
+    mkdir -p "$(dirname "$worktree_path")" || return 1
+
+    echo "Creating worktree: ${new_branch} (from ${base_branch})"
+    if ! git -C "$repo_root" worktree add -b "${new_branch}" "${worktree_path}" "${base_commit}"; then
+        echo "git worktree add に失敗しました"
         return 1
-    }
+    fi
 
     cd "${worktree_path}" || return 1
     echo "${worktree_path}" >> "$REPOHIST_FILE"

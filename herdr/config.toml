@@ -14,7 +14,7 @@ shell_mode = "auto"
 new_cwd = "follow"
 
 [keys]
-# Match the existing tmux prefix and pane navigation.
+# Prefix + hjkl pane navigation (ctrl+a).
 prefix = "ctrl+a"
 workspace_picker = ""
 new_workspace = "prefix+n"

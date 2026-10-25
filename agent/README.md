@@ -91,10 +91,6 @@ Codex・piの質問と承認待ちには、`agent/notifications/` のhookで `Po
 
 MCP サーバー自体の定義は secret を含むためこのリポジトリでは管理しない。`agent/mcp-servers.md` に再構築手順をドキュメント化している。
 
-## `./templates`
-
-`ide.yml`（tmux/IDE レイアウト）、`wtp.yml`（worktree 作成テンプレート）。launcherはmodelを固定せず、各providerの設定を使う。`wtp.yml` はsecretをcopyせず、依存installも `WTP_INSTALL_DEPS=1` の明示時だけ行う。
-
 ## 履歴からの定期最適化
 
 自動編集や常駐scanは行わない。月次または依頼時に対象pathを明示して `$agent-history-miner` を使い、まずroot sessionだけをboundedに集計する。

@@ -8,14 +8,12 @@
 # Optional parameters:
 # @raycast.icon 🦅
 # @raycast.packageName Disk Utilities
-# @raycast.description 再接続したhomeをマウントし、KeepAliveとEagleを起動します
+# @raycast.description 再接続したhomeをマウントし、Eagleを起動します
 
 VOLUME_NAME="home"
 VOLUME_PATH="/Volumes/$VOLUME_NAME"
 # home の APFS Volume UUID。ディスク番号が変わってもこのUUIDで識別する。
 VOLUME_UUID="0451CEC4-B55E-41B7-9559-8D3BE03EBDFB"
-KEEPALIVE_LABEL="dev.sotono.hdd-keepalive"
-KEEPALIVE_PLIST="$HOME/Library/LaunchAgents/$KEEPALIVE_LABEL.plist"
 MOUNT_WAIT_SECONDS=10
 
 if [ ! -d "$VOLUME_PATH" ]; then
@@ -53,12 +51,6 @@ if [ ! -d "$VOLUME_PATH" ]; then
   if [ ! -d "$VOLUME_PATH" ]; then
     echo "$VOLUME_NAME のマウントを確認できませんでした"
     exit 1
-  fi
-fi
-
-if ! launchctl print "gui/$(id -u)/$KEEPALIVE_LABEL" >/dev/null 2>&1; then
-  if ! launchctl bootstrap "gui/$(id -u)" "$KEEPALIVE_PLIST" >/dev/null 2>&1; then
-    echo "$VOLUME_NAME のKeepAliveを再開できませんでした" >&2
   fi
 fi
 

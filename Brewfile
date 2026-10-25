@@ -99,7 +99,7 @@ brew "pnpm"
 brew "poppler"
 # Interpreted, interactive, object-oriented programming language
 brew "python@3.13"
-# Reattach process (e.g., tmux) to background
+# Reattach process to user session on macOS
 brew "reattach-to-user-namespace"
 # Monitors sleep, wakeup, and idleness of a Mac
 brew "sleepwatcher", restart_service: :changed
@@ -107,8 +107,6 @@ brew "sleepwatcher", restart_service: :changed
 brew "starship"
 # Tool to enforce Swift style and conventions
 brew "swiftlint"
-# Terminal multiplexer
-brew "tmux"
 # Display directories as trees (with optional color/HTML output)
 brew "tree"
 # Your CLI home video recorder
@@ -117,8 +115,6 @@ brew "vhs"
 brew "volta"
 # Generate your Xcode project from a spec file and your folder structure
 brew "xcodegen"
-# Pluggable terminal workspace, with terminal multiplexer as the base feature
-brew "zellij"
 # Shell extension to navigate your filesystem faster
 brew "zoxide"
 # Quantum Mechanical Keyboard (QMK) Firmware
@@ -232,6 +228,5 @@ npm "firebase-tools"
 npm "npm-check-updates"
 npm "playwright-mcp"
 npm "playwright"
-npm "tmux-ide"
 npm "vercel"
 npm "wait-on"

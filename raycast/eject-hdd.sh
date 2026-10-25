@@ -13,7 +13,6 @@
 # Finder に表示される外付けHDDのボリューム名。
 VOLUME_NAME="home"
 VOLUME_PATH="/Volumes/$VOLUME_NAME"
-KEEPALIVE_PLIST="$HOME/Library/LaunchAgents/dev.sotono.hdd-keepalive.plist"
 EJECT_LOCK="/tmp/dev.sotono.hdd-ejecting"
 EAGLE_PROCESS_NAME="Eagle"
 EAGLE_QUIT_TIMEOUT_SECONDS=10
@@ -93,17 +92,14 @@ if pgrep -x "$EAGLE_PROCESS_NAME" >/dev/null 2>&1; then
   fi
 fi
 
-# KeepAlive が対象ボリュームを読んでいるため、取り外す間だけ停止する。
-# 未登録の場合も安全な取り外しを試みるため、bootout の失敗は無視する。
 if ! touch "$EJECT_LOCK"; then
   echo "取り外しロックを作成できませんでした"
   exit 1
 fi
 trap 'rm -f "$EJECT_LOCK"' EXIT
-launchctl bootout "gui/$(id -u)" "$KEEPALIVE_PLIST" >/dev/null 2>&1 || true
 
 # Eagle 終了直後はファイルハンドルの解放が反映されるまで少し時間がかかることがある。
-# 最終失敗時だけエラーを表示し、KeepAlive を再開する。
+# 最終失敗時だけエラーを表示する。
 for ((attempt = 1; attempt <= EJECT_ATTEMPTS; attempt++)); do
   if EJECT_OUTPUT=$(diskutil eject "/dev/$DISK_ID" 2>&1); then
     echo "$VOLUME_NAME を安全に取り外しました"
@@ -116,11 +112,5 @@ for ((attempt = 1; attempt <= EJECT_ATTEMPTS; attempt++)); do
 done
 
 printf '%s\n' "$EJECT_OUTPUT" >&2
-
-# 取り外しに失敗してまだマウントされている場合だけ KeepAlive を再開する。
-if [ -d "$VOLUME_PATH" ]; then
-  launchctl bootstrap "gui/$(id -u)" "$KEEPALIVE_PLIST" >/dev/null 2>&1 ||
-    echo "$VOLUME_NAME のKeepAliveを再開できませんでした" >&2
-fi
 echo "取り外しに失敗しました。使用中のアプリを閉じてください"
 exit 1

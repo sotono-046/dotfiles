@@ -392,7 +392,7 @@ install_dependencies() {
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended || true
   fi
 
-  local brew_formulae=(starship tmux git gh jq fzf ripgrep fd bat eza zoxide node)
+  local brew_formulae=(starship git gh jq fzf ripgrep fd bat eza zoxide node)
   local formula
   for formula in "${brew_formulae[@]}"; do
     if ! brew list --formula "$formula" >/dev/null 2>&1; then
@@ -419,17 +419,12 @@ install_dependencies() {
     fi
   fi
 
-  if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
-    echo "Installing tpm..."
-    git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm" || true
-  fi
 }
 
 install_base_links() {
   local links=(
     ".zshrc:$DOTFILES_HOME/.zshrc"
     "starship.toml:$DOTFILES_HOME/.config/starship.toml"
-    ".tmux.conf:$DOTFILES_HOME/.tmux.conf"
     "herdr/config.toml:$DOTFILES_HOME/.config/herdr/config.toml"
     "ccstatusline.json:$DOTFILES_HOME/.config/ccstatusline/settings.json"
   )
