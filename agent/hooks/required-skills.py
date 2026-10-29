@@ -209,13 +209,9 @@ def hook(client, home, slot, payload):
     deny = False
     if event == "PreToolUse":
         state = state_path(client, home, payload, slot, "git" if command else "mandatory")
-        fingerprint = digest(bundle.digest + command)
-        if not command:
-            state_path(client, home, payload, slot, "git").unlink(missing_ok=True)
+        fingerprint = digest(bundle.digest)
         previous = state.read_text() if state.exists() else ""
         if previous == fingerprint:
-            if command:
-                state.unlink()
             return {}
         atomic_write(state, fingerprint)
         deny = True

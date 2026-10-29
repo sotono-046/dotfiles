@@ -1,57 +1,12 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_NO_FLICKER": "1"
   },
   "permissions": {
-    "allow": [
-      "Glob",
-      "Grep",
-      "Read",
-      "WebFetch",
-      "WebSearch",
-      "mcp__serena__activate_project",
-      "mcp__serena__list_memories",
-      "mcp__serena__read_memory",
-      "mcp__serena__find_file",
-      "mcp__serena__list_dir",
-      "mcp__serena__search_for_pattern",
-      "mcp__serena__find_symbol",
-      "mcp__serena__get_symbols_overview",
-      "mcp__serena__find_referencing_symbols",
-      "mcp__serena__think_about_whether_you_are_done",
-      "mcp__serena__think_about_collected_information",
-      "Skill(skill-creator)",
-      "Bash(git push *)",
-      "Bash(git push)",
-      "Bash(git clean *)",
-      "Bash(git clean)",
-      "Bash(git reset --hard *)",
-      "Bash(git reset --hard)",
-      "Bash(rm -rf *)",
-      "Bash(gh pr merge *)",
-      "Bash(gh pr merge)",
-      "Bash(gh repo delete *)",
-      "Bash(gh repo delete)",
-      "Bash(gh release *)",
-      "Bash(gh release)",
-      "Bash(gcloud * delete *)",
-      "Bash(gcloud * deploy *)",
-      "Bash(gcloud run deploy)",
-      "Bash(gcloud functions deploy)",
-      "Bash(gcloud run services delete *)",
-      "Bash(gcloud functions delete *)",
-      "Bash(firebase deploy *)",
-      "Bash(firebase deploy)",
-      "Bash(pnpm deploy *)",
-      "Bash(pnpm deploy)"
-    ],
+    "allow": [],
     "deny": [],
-    "ask": [
-      "Bash(sudo *)",
-      "Bash(sudo)"
-    ],
+    "ask": ["Bash(sudo *)", "Bash(sudo)"],
     "defaultMode": "auto"
   },
   "model": "fable[1m]",
@@ -69,17 +24,9 @@
     "vercel@claude-plugins-official": true,
     "fairy-tale@fairy-tale-marketplace": true
   },
-  "extraKnownMarketplaces": {
-    "fairy-tale-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "bonginkan/fairy_tale"
-      }
-    }
-  },
   "language": "Japanese",
   "alwaysThinkingEnabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "high",
   "plansDirectory": "./.temp/plans",
   "skipWorkflowUsageWarning": true,
   "theme": "dark-ansi",

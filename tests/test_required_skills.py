@@ -128,12 +128,54 @@ class RequiredSkillsTests(unittest.TestCase):
 
     def test_git_boundary_includes_git_ops_and_allows_exact_retry(self):
         self.write_skill("git-ops", "GIT-OPS-FULL-TAIL")
-        self.output("codex", "UserPromptSubmit")
         for command in ("git commit -m test", "git -C /tmp push", "gh pr create", "gh pr merge 123"):
+            self.output("codex", "UserPromptSubmit")
             value = self.output("codex", "PreToolUse", tool_input={"command": command})["hookSpecificOutput"]
             self.assertEqual(value["permissionDecision"], "deny")
             self.assertIn("GIT-OPS-FULL-TAIL", value["additionalContext"])
             self.assertEqual(self.output("codex", "PreToolUse", tool_input={"command": command}), {})
+
+    def test_git_delivery_survives_skill_reads_and_command_changes(self):
+        self.write_skill("git-ops", "GIT-OPS-FULL-TAIL")
+        for client in ("codex", "claude"):
+            with self.subTest(client=client):
+                slots = range(16) if client == "claude" else range(1)
+                for slot in slots:
+                    self.output(client, "UserPromptSubmit", slot)
+                    value = self.output(client, "PreToolUse", slot, tool_input={"command": "gh pr create"})
+                    self.assertEqual(value["hookSpecificOutput"]["permissionDecision"], "deny")
+                    self.output(client, "PreToolUse", slot, tool_name="Read", tool_input={"file_path": str(self.alpha)})
+                    self.output(client, "PreToolUse", slot, tool_input={"command": "cat /skills/git-ops/SKILL.md"})
+                    for command in ("gh pr create", "gh pr create --body-file /tmp/body.md", "git push", "gh pr create"):
+                        retry = self.output(client, "PreToolUse", slot, tool_input={"command": command})
+                        self.assertEqual(retry.get("hookSpecificOutput", {}).get("permissionDecision"), None, f"{client} slot {slot}: retry denied after skill reads")
+
+    def test_git_delivery_is_invalidated_by_content_request_and_scope(self):
+        self.alpha.write_text("ALPHA")
+        self.beta.write_text("BETA")
+        skill = self.write_skill("git-ops", "GIT-OPS-V1")
+        command = {"command": "gh pr create"}
+        for client in ("codex", "claude"):
+            with self.subTest(client=client):
+                skill.write_text("GIT-OPS-V1")
+                self.output(client, "UserPromptSubmit")
+                self.output(client, "PreToolUse", tool_input=command)
+                self.assertEqual(self.output(client, "PreToolUse", tool_input=command), {})
+                skill.write_text("GIT-OPS-V2")
+                changed = self.output(client, "PreToolUse", tool_input=command)["hookSpecificOutput"]
+                self.assertEqual(changed["permissionDecision"], "deny")
+                self.assertIn("GIT-OPS-V2", changed["additionalContext"])
+                self.assertEqual(self.output(client, "PreToolUse", tool_input=command), {})
+                self.output(client, "UserPromptSubmit")
+                self.assertEqual(self.output(client, "PreToolUse", tool_input=command)["hookSpecificOutput"]["permissionDecision"], "deny")
+                for fields in ({"agent_id": "child"}, {"session_id": "other"}, {"cwd": str(self.root / "other")}):
+                    value = self.output(client, "PreToolUse", tool_input=command, **fields)
+                    self.assertEqual(value["hookSpecificOutput"]["permissionDecision"], "deny")
+                skill.unlink()
+                missing = self.output(client, "PreToolUse", tool_input=command)["hookSpecificOutput"]
+                self.assertEqual(missing["permissionDecision"], "deny")
+                self.assertNotIn("additionalContext", missing)
+                self.write_skill("git-ops", "GIT-OPS-V1")
 
     def test_missing_empty_and_over_capacity_never_emit_partial_success(self):
         for contents in (None, "", "😀" * 65000, "x" * 127000):
